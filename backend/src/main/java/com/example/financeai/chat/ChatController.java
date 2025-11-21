@@ -1,52 +1,37 @@
 package com.example.financeai.chat;
 
-import com.example.financeai.chat.dto.ChatMessageDto;
-import com.example.financeai.chat.dto.ChatRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * REST controller exposing chat endpoints.
- */
 @RestController
-@RequestMapping("/api/chat")
+@RequestMapping("/api")
 @CrossOrigin
 public class ChatController {
 
     private final ChatService chatService;
+    private final DocumentService documentService;
 
-    public ChatController(ChatService chatService) {
+    public ChatController(ChatService chatService,
+                          DocumentService documentService) {
         this.chatService = chatService;
+        this.documentService = documentService;
     }
 
-    @PostMapping("/send")
-    public ResponseEntity<ChatMessageDto> send(
-            @AuthenticationPrincipal(expression = "userId") String userId,
-            @RequestBody ChatRequest request) {
-
-        ChatMessageDto response =
-                chatService.handleUserMessage(userId, request);
-        return ResponseEntity.ok(response);
+    @PostMapping("/chat")
+    public ResponseEntity<ChatResponse> chat(@RequestBody ChatRequest request) {
+        String answer = chatService.ask(request.getMessage());
+        return ResponseEntity.ok(new ChatResponse(answer));
     }
 
-    @GetMapping("/history/{conversationId}")
-    public ResponseEntity<?> history(
-            @AuthenticationPrincipal(expression = "userId") String userId,
-            @PathVariable Long conversationId) {
-
-        return ResponseEntity.ok(
-                chatService.getConversationHistory(userId, conversationId)
-        );
+    @PostMapping(value = "/docs", consumes = "text/plain")
+    public ResponseEntity<String> uploadDocument(@RequestBody String text) {
+        documentService.storeText(text);
+        return ResponseEntity.ok("Document stored");
     }
 
-    @GetMapping("/conversations")
-    public ResponseEntity<?> conversations(
-            @AuthenticationPrincipal(expression = "userId") String userId) {
-
-        return ResponseEntity.ok(
-                chatService.listConversations(userId)
-        );
+    @GetMapping("/health")
+    public ResponseEntity<String> health() {
+        return ResponseEntity.ok("OK");
     }
 
 }
