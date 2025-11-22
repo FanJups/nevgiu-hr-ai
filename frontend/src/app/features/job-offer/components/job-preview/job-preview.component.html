@@ -1,0 +1,89 @@
+<div class="job-preview-card">
+  <div class="preview-header">
+    <h3>Generated Job Offer</h3>
+    <!-- <div class="action-buttons">
+      <button class="btn btn-outline" (click)="onEdit()">Edit</button>
+      <button class="btn btn-secondary" (click)="onRegenerate()">Regenerate</button>
+      <button class="btn btn-primary" (click)="onSave()">Save Offer</button>
+    </div> -->
+  </div>
+
+  <div class="job-content">
+    <!-- Job Header -->
+    <div class="job-header">
+      <h2>{{ jobOffer?.jobTitle }}</h2>
+      <p class="job-level">{{ jobOffer?.level }}</p>
+    </div>
+
+    <!-- Responsibilities -->
+    <section class="section">
+      <h4>Key Responsibilities</h4>
+      <ul>
+        <li *ngFor="let responsibility of jobOffer.responsibilities">{{ responsibility }}</li>
+      </ul>
+    </section>
+
+    <!-- Qualifications -->
+    <section class="section">
+      <h4>Qualifications</h4>
+
+      <div class="qualification-group">
+        <h5>Required</h5>
+        <ul>
+          <li *ngFor="let qual of jobOffer.qualifications.required">{{ qual }}</li>
+        </ul>
+      </div>
+
+      <div class="qualification-group" *ngIf="jobOffer.qualifications.preferred.length > 0">
+        <h5>Preferred</h5>
+        <ul>
+          <li *ngFor="let qual of jobOffer.qualifications.preferred">{{ qual }}</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Soft Skills -->
+    <section class="section" *ngIf="jobOffer.softSkills.length > 0">
+      <h4>Soft Skills</h4>
+      <div class="skills-list">
+        <span class="skill-tag" *ngFor="let skill of jobOffer.softSkills">{{ skill }}</span>
+      </div>
+    </section>
+
+    <!-- Benefits -->
+    <section class="section" *ngIf="jobOffer.benefits.length > 0">
+      <h4>Benefits & Perks</h4>
+      <ul>
+        <li *ngFor="let benefit of jobOffer.benefits">{{ benefit }}</li>
+      </ul>
+    </section>
+
+    <!-- Full Generated Content -->
+    <section class="section">
+      <h4>Complete Job Description</h4>
+      <div class="generated-content">
+        {{ jobOffer?.summary }}
+      </div>
+    </section>
+
+    <!-- Missing Info Warnings -->
+    <div class="warnings" *ngIf="jobOffer.missingInfo && jobOffer.missingInfo.length > 0">
+      <h5>⚠️ Suggested Additions</h5>
+      <ul>
+        <li *ngFor="let info of jobOffer.missingInfo">{{ info }}</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div class="loading-card" *ngIf="isLoading">
+  <app-loading-spinner message="Generating job offer with AI..."></app-loading-spinner>
+</div>
+
+<!-- Empty State -->
+<div class="empty-state" *ngIf="!jobOffer && !isLoading">
+  <div class="empty-icon">💼</div>
+  <h4>No Job Offer Generated</h4>
+  <p>Enter a brief description above to generate your first AI-powered job offer.</p>
+</div>

@@ -1,0 +1,99 @@
+<div class="job-generator-card">
+  <div class="header text-center">
+    <h2 class="title">Generate Job Offer</h2>
+    <p class="subtitle">Enter a brief description and let AI create a complete job offer</p>
+  </div>
+
+  <form [formGroup]="jobForm">
+    <!-- Main Input -->
+    <div class="form-group">
+      <label for="briefDescription">Brief Job Description <span class="text-danger">*</span></label>
+      <div class="text-muted">Describe the role, skills needed, and any specific requirements</div>
+      <textarea
+        id="briefDescription"
+        formControlName="briefDescription"
+        rows="4"
+        placeholder="e.g., 'Looking for a senior backend developer with Python and AWS experience for our fintech team...'"
+        class="form-control"
+        [class.error]="briefDescription?.invalid && briefDescription?.touched"
+      >
+      </textarea>
+      <div class="error-message" *ngIf="briefDescription?.invalid && briefDescription?.touched">
+        <span *ngIf="briefDescription?.errors?.['required']" class="text-danger"
+          >Description is required</span
+        >
+        <span *ngIf="briefDescription?.errors?.['minlength']" class="text-danger"
+          >Description should be at least 10 characters</span
+        >
+      </div>
+    </div>
+
+    <!-- Advanced Options Toggle -->
+    <div class="advanced-toggle">
+      <button type="button" class="btn btn-link" (click)="toggleAdvanced()">
+        Advanced Options
+      </button>
+    </div>
+
+    <!-- Advanced Options -->
+    <div class="advanced-options" *ngIf="isAdvancedOpen">
+      <div class="form-row">
+        <div class="form-group mb-2">
+          <label for="department">Department</label>
+          <input
+            id="department"
+            formControlName="department"
+            type="text"
+            placeholder="e.g., Engineering, Marketing"
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="location">Location</label>
+          <input
+            id="location"
+            formControlName="location"
+            type="text"
+            placeholder="e.g., Remote, New York, London"
+            class="form-control"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group mb-3">
+          <label for="employmentType">Employment Type</label>
+          <select id="employmentType" formControlName="employmentType" class="form-control">
+            <option *ngFor="let type of employmentTypes" [value]="type">{{ type }}</option>
+          </select>
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="tone">Tone</label>
+          <select id="tone" formControlName="tone" class="form-control">
+            <option *ngFor="let tone of tones" [value]="tone.value">{{ tone.label }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="salaryRange">Salary Range</label>
+        <input
+          id="salaryRange"
+          formControlName="salaryRange"
+          type="text"
+          placeholder="e.g., $80,000 - $120,000"
+          class="form-control"
+        />
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="form-actions mt-3">
+      <button type="submit" class="btn btn-primary" [disabled]="jobForm.invalid">
+        Generate Job Offer
+      </button>
+    </div>
+  </form>
+</div>

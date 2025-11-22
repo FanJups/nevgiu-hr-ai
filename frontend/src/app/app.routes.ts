@@ -1,11 +1,9 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth.guard';
 
-/**
- * Application routes.
- */
-export const APP_ROUTES: Routes = [
-
-  { path: '', redirectTo: '/login', pathMatch: 'full' },
-  { path: '**', redirectTo: '/login' }
+export const routes: Routes = [
+    {
+        path: "job-offer",
+        loadChildren: () =>
+            import("./features/job-offer/job-offer.routes").then((m) => m.JOB_ROUTES),
+    },
 ];
