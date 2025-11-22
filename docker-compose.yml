@@ -12,6 +12,13 @@ services:
       - "5432:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finance_user -d finance_ai"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
 
   backend:
     build: ./backend
@@ -26,7 +33,9 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    restart: on-failure:3
 
   frontend:
     build: ./frontend
