@@ -6,6 +6,8 @@ spring:
     url: jdbc:postgresql://db:5432/finance_ai
     username: finance_user
     password: super-secret
+    driver-class-name: org.postgresql.Driver
+
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
