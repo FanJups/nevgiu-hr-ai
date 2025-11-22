@@ -1,24 +1,8 @@
 spring:
+  profiles:
+    active: dev
   application:
-    name: finance-ai-backend
-
-  datasource:
-    url: jdbc:postgresql://db:5432/finance_ai
-    username: finance_user
-    password: super-secret
-
-  ai:
-    openai:
-      api-key: ${OPENAI_API_KEY:dummy}
-      embedding:
-        options:
-          model: text-embedding-3-small
-    vectorstore:
-      pgvector:
-        initialize-schema: true
-        table-name: document_chunks
-        index-type: hnsw
-        distance-type: cosine
+    name: hr-ai-recruitment
 
 server:
   port: 8080
