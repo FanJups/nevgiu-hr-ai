@@ -1,6 +1,7 @@
 package com.nevgiu.hrai.job;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nevgiu.hrai.job.dto.ApproveJobRequest;
 import com.nevgiu.hrai.job.dto.GeneratedJobOffer;
 import com.nevgiu.hrai.job.dto.JobGenerationRequest;
 import com.nevgiu.hrai.job.dto.JobGenerationResponse;
@@ -19,6 +20,11 @@ public class JobGenerationService {
     private final ObjectMapper objectMapper;
     private final JobRepository jobRepository;
 
+
+    /**
+     * Calls the LLM to generate a job offer draft.
+     * NOTE: This NO LONGER saves the job. It only returns the draft.
+     */
     public JobGenerationResponse generateJobOffer(JobGenerationRequest request) {
         String systemPrompt = buildSystemPrompt();
         String userPrompt = buildUserPrompt(request);
@@ -29,23 +35,22 @@ public class JobGenerationService {
                 .call()
                 .content();
 
-        JobGenerationResponse response = parseModelResponse(modelResponse);
+        return parseModelResponse(modelResponse);
+    }
 
-        // Optional: persist generated job
-        saveJob(response.jobOffer(), request);
+    /**
+     * Approves a (possibly edited) job offer and persists it as Job.
+     */
+    public Job approveJob(ApproveJobRequest request) {
+        GeneratedJobOffer offer = request.finalJobOffer();
+        JobGenerationRequest original = request.originalRequest();
 
-        return response;
+        return saveJob(offer, original);
     }
 
     String buildUserPrompt(JobGenerationRequest request) {
-        return """
-            Brief description: %s
-            Department: %s
-            Location: %s
-            Employment type: %s
-            Salary range: %s
-            Tone: %s
-            """.formatted(
+        return String.format(
+                "Brief description: %s%nDepartment: %s%nLocation: %s%nEmployment type: %s%nSalary range: %s%nTone: %s%n",
                 request.briefDescription(),
                 orNA(request.department()),
                 orNA(request.location()),
@@ -56,44 +61,40 @@ public class JobGenerationService {
     }
 
     String buildSystemPrompt() {
-        return """
-            You are an AI assistant that generates inclusive, well-structured job offers.
-            Rules:
-            - Use clear, professional, bias-free language.
-            - Avoid age-related or gendered terms (e.g., "young", "rockstar", "ninja").
-            - Adapt tone according to the provided tone parameter (formal, friendly, inclusive).
-            - Do NOT invent specific salary numbers or benefits if not provided. If missing, mark them as "missing".
-                        
-            You must return a SINGLE JSON object with the following structure:
-            {
-              "jobOffer": {
-                "inferredTitle": "...",
-                "level": "...",
-                "summary": "...",
-                "responsibilities": ["...", "..."],
-                "requiredQualifications": ["...", "..."],
-                "preferredQualifications": ["...", "..."],
-                "softSkills": ["...", "..."],
-                "benefits": ["...", "..."],
-                "employmentType": "...",
-                "location": "...",
-                "salaryRange": "...",
-                "tone": "..."
-              },
-              "missingInfo": ["salaryRange", "location"],
-              "suggestions": ["..."]
-            }
-                        
-            - "missingInfo" must list fields that are missing or ambiguous (e.g., salaryRange, location).
-            - "suggestions" should include short tips to improve the job offer, especially for inclusivity & clarity.
-            """;
+        return "You are an AI assistant that generates inclusive, well-structured job offers.\n"
+                + "Rules:\n"
+                + "- Use clear, professional, bias-free language.\n"
+                + "- Avoid age-related or gendered terms (e.g., \"young\", \"rockstar\", \"ninja\").\n"
+                + "- Adapt tone according to the provided tone parameter (formal, friendly, inclusive).\n"
+                + "- Do NOT invent specific salary numbers or benefits if not provided. If missing, mark them as \"missing\".\n"
+                + "\n"
+                + "You must return a SINGLE JSON object with the following structure:\n"
+                + "{\n"
+                + "  \"jobOffer\": {\n"
+                + "    \"inferredTitle\": \"...\",\n"
+                + "    \"level\": \"...\",\n"
+                + "    \"summary\": \"...\",\n"
+                + "    \"responsibilities\": [\"...\", \"...\"],\n"
+                + "    \"requiredQualifications\": [\"...\", \"...\"],\n"
+                + "    \"preferredQualifications\": [\"...\", \"...\"],\n"
+                + "    \"softSkills\": [\"...\", \"...\"],\n"
+                + "    \"benefits\": [\"...\", \"...\"],\n"
+                + "    \"employmentType\": \"...\",\n"
+                + "    \"location\": \"...\",\n"
+                + "    \"salaryRange\": \"...\",\n"
+                + "    \"tone\": \"...\"\n"
+                + "  },\n"
+                + "  \"missingInfo\": [\"salaryRange\", \"location\"],\n"
+                + "  \"suggestions\": [\"...\" ]\n"
+                + "}\n"
+                + "- \"missingInfo\" must list fields that are missing or ambiguous (e.g., salaryRange, location).\n"
+                + "- \"suggestions\" should include short tips to improve the job offer, especially for inclusivity & clarity.";
     }
 
     JobGenerationResponse parseModelResponse(String json) {
         try {
             return objectMapper.readValue(json, JobGenerationResponse.class);
         } catch (IOException e) {
-            // fallback: very defensive default
             GeneratedJobOffer emptyOffer = new GeneratedJobOffer(
                     "Unknown Title",
                     "",
@@ -112,7 +113,7 @@ public class JobGenerationService {
         }
     }
 
-    private void saveJob(GeneratedJobOffer offer, JobGenerationRequest request) {
+    private Job saveJob(GeneratedJobOffer offer, JobGenerationRequest request) {
         Job job = new Job();
         job.setTitle(offer.inferredTitle());
         job.setLevel(offer.level());
@@ -129,7 +130,7 @@ public class JobGenerationService {
         job.setSoftSkills(String.join("\n", offer.softSkills()));
         job.setBenefits(String.join("\n", offer.benefits()));
 
-        jobRepository.save(job);
+        return jobRepository.save(job);
     }
 
     private String orNA(String value) {

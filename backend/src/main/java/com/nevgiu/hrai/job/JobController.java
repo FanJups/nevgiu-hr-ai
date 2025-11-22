@@ -1,5 +1,6 @@
 package com.nevgiu.hrai.job;
 
+import com.nevgiu.hrai.job.dto.ApproveJobRequest;
 import com.nevgiu.hrai.job.dto.JobGenerationRequest;
 import com.nevgiu.hrai.job.dto.JobGenerationResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,11 @@ public class JobController {
     @PostMapping("/generate")
     public JobGenerationResponse generate(@RequestBody JobGenerationRequest request) {
         return jobGenerationService.generateJobOffer(request);
+    }
+
+    @PostMapping("/approve")
+    public Job approve(@RequestBody ApproveJobRequest request) {
+        return jobGenerationService.approveJob(request);
     }
 
     @GetMapping
