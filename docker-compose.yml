@@ -21,7 +21,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/finance_ai
       SPRING_DATASOURCE_USERNAME: finance_user
       SPRING_DATASOURCE_PASSWORD: super-secret
-      OPENAI_API_KEY: your-openai-key
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
       JWT_SECRET: change-me-change-me-change-me-change-me
     ports:
       - "8080:8080"
