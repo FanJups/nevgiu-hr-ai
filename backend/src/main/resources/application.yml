@@ -21,13 +21,13 @@ spring:
   ai:
     openai:
       api-key: ${OPENAI_API_KEY}
-      embedding:
-    vectorstore:
-      pgvector:
-        initialize-schema: true
-        table-name: document_chunks
-        index-type: hnsw
-        distance-type: COSINE_DISTANCE
+#      embedding:
+#    vectorstore:
+#      pgvector:
+#        initialize-schema: true
+#        table-name: document_chunks
+#        index-type: hnsw
+#        distance-type: COSINE_DISTANCE
 
 management:
   endpoints:
