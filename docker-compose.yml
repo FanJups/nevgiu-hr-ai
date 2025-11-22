@@ -16,7 +16,7 @@ services:
   backend:
     build: ./backend
     env_file:
-      - .env.local
+      - .env
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/finance_ai
       SPRING_DATASOURCE_USERNAME: finance_user
