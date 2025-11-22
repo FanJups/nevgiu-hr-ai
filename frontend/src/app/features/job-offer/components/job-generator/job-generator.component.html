@@ -4,7 +4,7 @@
     <p class="subtitle">Enter a brief description and let AI create a complete job offer</p>
   </div>
 
-  <form [formGroup]="jobForm">
+  <form [formGroup]="jobForm" (ngSubmit)="generateJobOffer()">
     <!-- Main Input -->
     <div class="form-group">
       <label for="briefDescription">Brief Job Description <span class="text-danger">*</span></label>
@@ -83,7 +83,7 @@
           id="salaryRange"
           formControlName="salaryRange"
           type="text"
-          placeholder="e.g., $80,000 - $120,000"
+          placeholder="e.g., 80000 - 120000 USD"
           class="form-control"
         />
       </div>
@@ -91,7 +91,7 @@
 
     <!-- Submit Button -->
     <div class="form-actions mt-3">
-      <button type="submit" class="btn btn-primary" [disabled]="jobForm.invalid">
+      <button type="submit" class="btn btn-primary" [disabled]="jobForm.invalid || loading">
         Generate Job Offer
       </button>
     </div>

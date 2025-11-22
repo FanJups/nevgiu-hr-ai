@@ -1,5 +1,5 @@
 export interface GeneratedJobOffer {
-    jobTitle: string;
+    inferredTitle: string;
     level: string;
     summary: string;
     responsibilities: string[];
