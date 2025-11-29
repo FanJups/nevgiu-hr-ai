@@ -2,6 +2,10 @@
   <div class="header">
     <h1>AI Job Offer Generator</h1>
     <p>Create professional job descriptions in seconds using AI</p>
+
+    <div>
+      <button class="btn btn-success" (click)="viewApproved()">View Approved Offers</button>
+    </div>
   </div>
 
   <div class="content">
@@ -20,6 +24,7 @@
         [isLoading]="isLoading"
         [originalBrief]="originalBrief"
         (regenerateOffer)="onRegenerateOffer()"
+        (approveOffer)="onApproveOffer($event)"
       ></app-job-preview>
     </div>
   </div>

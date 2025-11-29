@@ -1,16 +1,27 @@
 <div class="job-preview-card" *ngIf="jobOffer && !isLoading">
-  <div class="preview-header">
+  <div class="preview-header text-center">
     <h3>Generated Job Offer</h3>
-    <!-- <div class="action-buttons">
-      <button class="btn btn-outline" (click)="onEdit()">Edit</button>
-      
-      <button class="btn btn-primary" (click)="onSave()">Save Offer</button>
-    </div> -->
-    <button class="btn btn-secondary" (click)="onRegenerate()">Regenerate</button>
+    <div class="action-buttons d-flex gap-2 justify-content-between">
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline" (click)="onEdit()">Edit</button>
+        <button class="btn btn-secondary" id="regenerate-button" (click)="onRegenerate()">
+          Regenerate
+        </button>
+      </div>
+
+      <!-- Edit mode actions -->
+      <ng-container *ngIf="editMode">
+        <div class="d-flex gap-2">
+          <button class="btn btn-success" (click)="onApprove()">Approve</button>
+          <button class="btn btn-secondary" (click)="onCancelEdit()">Cancel</button>
+        </div>
+      </ng-container>
+    </div>
   </div>
 
-  <div class="job-content">
+  <div class="job-content mt-5" *ngIf="!editMode">
     <!-- Job Header -->
+    <!-- Read-only view -->
     <div class="job-header">
       <h2>{{ jobOffer?.jobOffer?.inferredTitle }}</h2>
       <p class="job-level">{{ jobOffer?.jobOffer?.level }}</p>
@@ -95,6 +106,131 @@
         <li *ngFor="let info of jobOffer?.missingInfo">{{ info }}</li>
       </ul>
     </div>
+  </div>
+
+  <div class="job-content mt-5" *ngIf="editMode">
+    <!-- Edit form (Reactive) -->
+    <form *ngIf="editMode && editedJobForm" [formGroup]="editedJobForm" class="job-header">
+      <div class="row">
+        <div class="mb-3 col-auto">
+          <label for="title" class="form-label">Title</label>
+          <input
+            type="text"
+            class="form-control"
+            id="title"
+            formControlName="inferredTitle"
+            placeholder="Enter job title"
+          />
+        </div>
+        <div class="mb-3 col-auto">
+          <label for="level" class="form-label">Level</label>
+          <input
+            type="text"
+            class="form-control"
+            id="level"
+            formControlName="level"
+            placeholder="Enter job level"
+          />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="mb-3 col-auto">
+          <label for="location" class="form-label">Location</label>
+          <input
+            type="text"
+            class="form-control"
+            id="location"
+            formControlName="location"
+            placeholder="Enter job location"
+          />
+        </div>
+
+        <div class="mb-3 col-auto">
+          <label for="salaryRange" class="form-label">Salary Range</label>
+          <input
+            type="text"
+            class="form-control"
+            id="salaryRange"
+            formControlName="salaryRange"
+            placeholder="Enter salary range"
+          />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="mb-3 col-auto">
+          <label for="employmentType" class="form-label">Employment Type</label>
+          <input
+            type="text"
+            class="form-control"
+            id="employmentType"
+            formControlName="employmentType"
+            placeholder="Enter employment type"
+          />
+        </div>
+
+        <div class="mb-3 col-auto">
+          <label for="tone" class="form-label">Tone</label>
+          <input
+            type="text"
+            class="form-control"
+            id="tone"
+            formControlName="tone"
+            placeholder="Enter tone"
+          />
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="responsibilities" class="form-label">Responsibilities (one per line)</label>
+        <textarea
+          class="form-control"
+          rows="4"
+          id="responsibilities"
+          formControlName="responsibilities"
+        ></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label for="requiredQualifications" class="form-label"
+          >Required Qualifications (one per line)</label
+        >
+        <textarea
+          class="form-control"
+          rows="3"
+          id="requiredQualifications"
+          formControlName="requiredQualifications"
+        ></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label for="preferredQualifications" class="form-label"
+          >Preferred Qualifications (one per line)</label
+        >
+        <textarea
+          class="form-control"
+          rows="3"
+          id="preferredQualifications"
+          formControlName="preferredQualifications"
+        ></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label for="softSkills" class="form-label">Soft Skills (one per line)</label>
+        <textarea
+          class="form-control"
+          rows="2"
+          id="softSkills"
+          formControlName="softSkills"
+        ></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label for="benefits" class="form-label">Benefits & Perks (one per line)</label>
+        <textarea class="form-control" rows="3" id="benefits" formControlName="benefits"></textarea>
+      </div>
+    </form>
   </div>
 </div>
 

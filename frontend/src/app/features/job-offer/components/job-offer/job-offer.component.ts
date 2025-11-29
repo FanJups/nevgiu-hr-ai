@@ -1,15 +1,16 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { JobGeneratorComponent } from '../job-generator/job-generator.component';
 import { JobPreviewComponent } from '../job-preview/job-preview.component';
 import { JobService } from '../../services/job.service';
 import { JobGenerationRequest } from '../../models/job-generation.models';
 import { JobGenerationResponse } from '../../models/job-generation-response.models';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-job-offer',
   imports: [JobGeneratorComponent, JobPreviewComponent],
   templateUrl: './job-offer.component.html',
-  styleUrl: './job-offer.component.scss'
+  styleUrls: ['./job-offer.component.scss']
 })
 export class JobOfferComponent {
   generatedJobOffer: JobGenerationResponse | null = null;
@@ -17,6 +18,10 @@ export class JobOfferComponent {
   originalBrief: JobGenerationRequest | null = null;
   error: string | null = null;
   private jobService = inject(JobService);
+
+  private router = inject(Router);
+
+
 
   onGenerateOffer(request: JobGenerationRequest): void {
     this.isLoading = true;
@@ -44,5 +49,32 @@ export class JobOfferComponent {
       };
       this.onGenerateOffer(request);
     }
+  }
+
+  onApproveOffer(offer: JobGenerationResponse): void {
+    if (!this.originalBrief) return;
+
+    const approveRequest = {
+      originalRequest: this.originalBrief,
+      finalJobOffer: offer.jobOffer
+    };
+
+    this.jobService.approveJobOffer(approveRequest).subscribe({
+      next: () => {
+        this.generatedJobOffer = null;
+        this.originalBrief = null;
+        alert('Job offer approved successfully!');
+      },
+      error: (error) => {
+        console.error('Error approving job offer:', error);
+      }
+    });
+  }
+
+  viewApproved(): void {
+    // Logic to view approved job offers navigate to list page
+    this.router.navigate(['/jobs/job-listing']);
+
+
   }
 }

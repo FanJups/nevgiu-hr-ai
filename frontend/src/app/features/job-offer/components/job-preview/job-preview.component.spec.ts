@@ -51,7 +51,7 @@ describe('JobPreviewComponent', () => {
 
     const emitSpy = spyOn(component.regenerateOffer, 'emit');
 
-    const btn = fixture.debugElement.query(By.css('.preview-header button'));
+    const btn = fixture.debugElement.query(By.css('#regenerate-button'));
     expect(btn).toBeTruthy();
     btn.nativeElement.click();
 

@@ -3,7 +3,12 @@ import { JobService } from './features/job-offer/services/job.service';
 
 export const routes: Routes = [
     {
-        path: "job-offer",
+        path: "", // Default route
+        redirectTo: "jobs/job-offer",
+        pathMatch: "full",
+    },
+    {
+        path: "jobs",
         loadChildren: () =>
             import("./features/job-offer/job-offer.routes").then((m) => m.JOB_ROUTES),
         providers: [

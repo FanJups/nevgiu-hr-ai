@@ -1,0 +1,24 @@
+<div class="container job-listings my-4">
+  <div class="header">
+    <h1>Approved Job Offers</h1>
+    <p>View and manage all approved job offers</p>
+  </div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Title</th>
+        <th scope="col">Level</th>
+        <th scope="col">Summary</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let job of approvedJobs; let i = index">
+        <th scope="row">{{ i + 1 }}</th>
+        <td>{{ job?.inferredTitle }}</td>
+        <td>{{ job?.level }}</td>
+        <td>{{ job?.summary }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
