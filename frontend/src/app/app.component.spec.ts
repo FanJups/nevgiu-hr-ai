@@ -34,4 +34,16 @@ describe('AppComponent', () => {
     ]);
   });
 
+  it('renders the NevGiu logo as the accessible home link', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    const brand = fixture.nativeElement.querySelector('a.brand') as HTMLAnchorElement;
+    const logo = brand.querySelector('img') as HTMLImageElement;
+    expect(brand.getAttribute('aria-label')).toBe('NevGiu HR AI Recruitment home');
+    expect(brand.getAttribute('href')).toBe('/jobs/job-offer');
+    expect(logo.getAttribute('src')).toBe('/nevgiu_logo.png');
+    expect(logo.getAttribute('alt')).toBe('NevGiu');
+    expect(brand.textContent).toContain('HR AI Recruitment');
+  });
+
 });
