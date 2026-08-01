@@ -411,12 +411,12 @@ The deployment pipeline can be built before these items are complete, but the en
 
 ### Phase 1 - Production-ready container configuration
 
-- [ ] Add a provider-neutral production Compose file.
-- [ ] Add a Caddy or Traefik reverse proxy with TLS.
-- [ ] Externalize database and application secrets.
-- [ ] Remove public database and backend ports.
-- [ ] Add production Spring configuration.
-- [ ] Disable built-in CV import in production.
+- [x] Add a provider-neutral deployment Compose file.
+- [x] Add a Caddy reverse proxy with automatic TLS.
+- [x] Externalize database and application secrets through the server environment file.
+- [x] Remove public database and backend ports from the deployment topology.
+- [x] Add environment-driven production Spring settings.
+- [x] Make built-in CV import environment-controlled and document that production disables it.
 - [ ] Add deployment and rollback scripts.
 - [ ] Add database backup and restore scripts and test restoration.
 

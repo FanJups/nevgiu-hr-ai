@@ -3,6 +3,8 @@ node_modules/
 dist/
 .env
 .env.*
+deploy/.env
+!deploy/.env.example
 .idea/
 .vscode/
 .DS_Store
