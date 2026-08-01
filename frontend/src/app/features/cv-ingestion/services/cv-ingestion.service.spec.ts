@@ -23,7 +23,7 @@ describe('CvIngestionService', () => {
     const request = http.expectOne(`${environment.apiUrl}/candidates/import`);
     expect(request.request.method).toBe('POST');
     expect(request.request.body instanceof FormData).toBeTrue();
-    expect((request.request.body as FormData).get('file')).toBe(file);
+    expect(((request.request.body as FormData).get('file') as File).name).toBe('candidate.pdf');
     request.flush({ status: 'IMPORTED' });
   });
 
@@ -34,5 +34,41 @@ describe('CvIngestionService', () => {
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({ candidateId: 7, jobId: 12, weights: null });
     request.flush({ evaluation: {}, explanation: 'Good fit' });
+  });
+
+  it('uploads a ZIP as multipart form data', () => {
+    const file = new File(['archive'], 'candidates.zip', { type: 'application/zip' });
+    service.uploadArchive(file).subscribe();
+    const request = http.expectOne(`${environment.apiUrl}/candidates/import/archive`);
+    expect(request.request.method).toBe('POST');
+    expect(((request.request.body as FormData).get('file') as File).name).toBe('candidates.zip');
+    request.flush({ totalFiles: 0, results: [] });
+  });
+
+  it('loads the built-in archive without sending a file', () => {
+    service.importInitial().subscribe();
+    const request = http.expectOne(`${environment.apiUrl}/candidates/import/initial`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({});
+    request.flush({ totalFiles: 0, results: [] });
+  });
+
+  it('retrieves candidates and approved jobs', () => {
+    let candidateCount = -1;
+    let jobCount = -1;
+    service.getCandidates().subscribe((items) => candidateCount = items.length);
+    service.getJobs().subscribe((items) => jobCount = items.length);
+    http.expectOne(`${environment.apiUrl}/candidates`).flush([]);
+    http.expectOne(`${environment.apiUrl}/jobs`).flush([]);
+    expect(candidateCount).toBe(0);
+    expect(jobCount).toBe(0);
+  });
+
+  it('propagates structured backend errors', () => {
+    let message = '';
+    service.importInitial().subscribe({ error: (error) => message = error.error.message });
+    http.expectOne(`${environment.apiUrl}/candidates/import/initial`).flush(
+      { message: 'Initial CV import is disabled' }, { status: 403, statusText: 'Forbidden' });
+    expect(message).toBe('Initial CV import is disabled');
   });
 });

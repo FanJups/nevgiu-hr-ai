@@ -96,6 +96,73 @@ class CvIngestionServiceTest {
                 .hasMessage("ZIP archive contains path traversal");
     }
 
+    @Test
+    void archiveRejectsWindowsAbsolutePath() throws Exception {
+        byte[] archive = zip(new Entry("C:/private/candidate.pdf", minimalPdfBytes()));
+
+        assertThatThrownBy(() -> service.importArchive(
+                new ByteArrayInputStream(archive), archive.length, CvDocumentSource.USER_UPLOAD))
+                .isInstanceOf(CvIngestionException.class)
+                .hasMessage("ZIP archive contains an absolute path");
+    }
+
+    @Test
+    void archiveRejectsTooManyEntries() throws Exception {
+        Entry[] entries = new Entry[11];
+        for (int i = 0; i < entries.length; i++) {
+            entries[i] = new Entry("CVs/" + i + ".txt", "ignored".getBytes());
+        }
+        byte[] archive = zip(entries);
+
+        assertThatThrownBy(() -> service.importArchive(
+                new ByteArrayInputStream(archive), archive.length, CvDocumentSource.USER_UPLOAD))
+                .isInstanceOf(CvIngestionException.class)
+                .hasMessage("ZIP archive contains too many files");
+    }
+
+    @Test
+    void rejectsArchiveLargerThanConfiguredLimitBeforeReading() {
+        assertThatThrownBy(() -> service.importArchive(
+                new ByteArrayInputStream(new byte[0]), 2_000_001, CvDocumentSource.USER_UPLOAD))
+                .isInstanceOf(CvIngestionException.class)
+                .satisfies(error -> assertThat(((CvIngestionException) error).getStatus())
+                        .isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE));
+    }
+
+    @Test
+    void lowTextPdfIsStoredForReviewWithoutCreatingCandidate() {
+        CvTextExtractor shortExtractor = content -> "short";
+        CvIngestionProperties properties = new CvIngestionProperties(
+                1_000_000, 2_000_000, 10, 2_000_000, 100, 50,
+                "classpath:intial/CVs.zip", true);
+        CvIngestionService reviewService = new CvIngestionService(
+                candidateRepository, documentRepository, shortExtractor, properties, new DefaultResourceLoader());
+
+        CvImportResult result = reviewService.importPdf(
+                "scan.pdf", "application/pdf", minimalPdfBytes(), CvDocumentSource.USER_UPLOAD);
+
+        assertThat(result.status()).isEqualTo(CvIngestionStatus.NEEDS_REVIEW);
+        assertThat(result.candidateId()).isNull();
+        assertThat(result.warnings()).isNotEmpty();
+    }
+
+    @Test
+    void rejectsPdfEntryLargerThanConfiguredLimit() throws Exception {
+        CvIngestionProperties properties = new CvIngestionProperties(
+                8, 2_000_000, 10, 2_000_000, 100, 1,
+                "classpath:intial/CVs.zip", true);
+        CvIngestionService limitedService = new CvIngestionService(
+                candidateRepository, documentRepository, content -> "valid extracted text",
+                properties, new DefaultResourceLoader());
+        byte[] archive = zip(new Entry("candidate.pdf", minimalPdfBytes()));
+
+        assertThatThrownBy(() -> limitedService.importArchive(
+                new ByteArrayInputStream(archive), archive.length, CvDocumentSource.USER_UPLOAD))
+                .isInstanceOf(CvIngestionException.class)
+                .satisfies(error -> assertThat(((CvIngestionException) error).getStatus())
+                        .isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE));
+    }
+
     private byte[] minimalPdfBytes() {
         return "%PDF-1.4\n%%EOF".getBytes();
     }

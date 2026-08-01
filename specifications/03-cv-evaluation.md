@@ -115,6 +115,11 @@ Unit tests currently cover:
 - Composite-score normalization and weighting.
 - Rejecting invalid score ranges and invalid custom weight totals.
 - PDF text extraction, PDF validation, safe archive traversal, and unsupported archive entries.
+- Candidate/evaluation HTTP validation and typed ingestion errors through MockMvc.
+- Candidate-document persistence, relationships, and unique SHA-256 constraints with an embedded database.
+- Missing candidates and blank CV text without invoking the AI provider.
+
+The current automated baseline is 29 backend tests and 40 Angular browser tests. PostgreSQL/Testcontainers, live-provider, adversarial prompt-injection, and full multi-service end-to-end suites remain future work.
 
 ## Evaluation metrics
 
@@ -382,7 +387,7 @@ Implemented behavior:
 6. Backend `ApiError.message` values are surfaced without exposing stack traces.
 7. Candidate and approved-job selectors refresh after ingestion and evaluation only starts when the user presses **Evaluate candidate**.
 8. The result view shows overall fit, all eight metrics, and the AI explanation.
-9. Service tests verify multipart PDF upload and the explicit candidate/job evaluation request.
+9. Angular tests cover all ingestion service endpoints, multipart request construction, structured errors, routing/navigation, file validation, loading states, result rendering, selection gating, explicit evaluation, metric rendering, and provider failures.
 
 Remaining frontend improvements:
 
@@ -390,7 +395,7 @@ Remaining frontend improvements:
 - Add filtering/pagination for large archive result sets.
 - Link result rows to a dedicated candidate/document detail view with bounded extracted-text preview.
 - Hide the built-in-data action based on authenticated administrator permissions.
-- Add correction/reprocessing screens and richer component/accessibility/end-to-end automation.
+- Add correction/reprocessing screens and full accessibility/end-to-end automation.
 
 ### Frontend acceptance criteria
 
@@ -448,7 +453,7 @@ Remaining frontend improvements:
 3. Employment gaps and AI confidence currently affect the overall candidate score.
 4. CV content is inserted into the model prompt without explicit prompt-injection defenses.
 5. Provider-level structured-output constraints are not yet enabled.
-6. Controller, persistence, provider-failure, adversarial, and end-to-end evaluation coverage remains incomplete.
+6. Provider-level, PostgreSQL/Testcontainers, adversarial, and full end-to-end evaluation coverage remains incomplete.
 7. Candidate endpoints return persistence entities directly and currently permit unrestricted development CORS.
 
 ## Acceptance criteria

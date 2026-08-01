@@ -3,10 +3,19 @@ package com.nevgiu.hrai.evaluation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nevgiu.hrai.evaluation.dto.AiEvaluationResult;
 import com.nevgiu.hrai.evaluation.dto.EvaluationWeights;
+import com.nevgiu.hrai.evaluation.dto.EvaluationRequest;
+import com.nevgiu.hrai.candidate.Candidate;
+import com.nevgiu.hrai.candidate.CandidateRepository;
+import com.nevgiu.hrai.job.Job;
+import com.nevgiu.hrai.job.JobRepository;
 import org.junit.jupiter.api.Test;
+
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class CvEvaluationServiceTest {
 
@@ -107,5 +116,35 @@ class CvEvaluationServiceTest {
         assertThatThrownBy(() -> service.computeComposite(scores, service.defaultWeights()))
                 .isInstanceOf(EvaluationException.class)
                 .hasMessage("AI evaluation returned scores outside the allowed ranges");
+    }
+
+    @Test
+    void evaluateCandidate_rejectsUnknownCandidateBeforeCallingProvider() {
+        CandidateRepository candidates = mock(CandidateRepository.class);
+        when(candidates.findById(99L)).thenReturn(Optional.empty());
+        CvEvaluationService service = new CvEvaluationService(
+                null, new ObjectMapper(), candidates, mock(JobRepository.class), null);
+
+        assertThatThrownBy(() -> service.evaluateCandidate(new EvaluationRequest(99L, 1L, null)))
+                .isInstanceOf(EvaluationException.class)
+                .hasMessage("Candidate not found")
+                .satisfies(error -> assertThat(((EvaluationException) error).getStatus().value()).isEqualTo(404));
+    }
+
+    @Test
+    void evaluateCandidate_rejectsBlankCvBeforeCallingProvider() {
+        Candidate candidate = new Candidate();
+        candidate.setCvText("  ");
+        CandidateRepository candidates = mock(CandidateRepository.class);
+        JobRepository jobs = mock(JobRepository.class);
+        when(candidates.findById(1L)).thenReturn(Optional.of(candidate));
+        when(jobs.findById(2L)).thenReturn(Optional.of(new Job()));
+        CvEvaluationService service = new CvEvaluationService(
+                null, new ObjectMapper(), candidates, jobs, null);
+
+        assertThatThrownBy(() -> service.evaluateCandidate(new EvaluationRequest(1L, 2L, null)))
+                .isInstanceOf(EvaluationException.class)
+                .hasMessage("Candidate has no extracted CV text")
+                .satisfies(error -> assertThat(((EvaluationException) error).getStatus().value()).isEqualTo(422));
     }
 }
