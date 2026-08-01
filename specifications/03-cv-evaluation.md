@@ -336,7 +336,7 @@ The extracted text is currently retained, but original binary files are not. Pro
 - [ ] Add AI-assisted metadata extraction only for fields that cannot be reliably parsed, with confidence and provenance.
 - [ ] Detect probable templates and non-CV documents for manual review.
 - [ ] Add candidate detail and ingestion-status APIs.
-- [ ] Build Angular PDF/ZIP upload and bulk-result views.
+- [x] Build Angular PDF/ZIP upload, bulk-result, and explicit evaluation views.
 - [ ] Add correction and reprocessing workflows.
 - [ ] Define secure original-document storage, retention, and deletion.
 
@@ -368,28 +368,78 @@ The extracted text is currently retained, but original binary files are not. Pro
 
 **Exit condition:** the workflow meets agreed security, privacy, operational, and data-governance requirements.
 
-## Frontend implementation plan
+## Implemented frontend workflow
 
-The frontend is intentionally not part of the current backend change. It should be implemented in this order:
+The Angular frontend now provides a dedicated `/candidates/import` workspace and primary navigation linking job generation, approved jobs, and CV evaluation.
 
-1. Add a typed Angular ingestion service that sends `FormData` to the PDF and ZIP endpoints and calls the built-in import endpoint without a file.
-2. Add a `/candidates/import` route with separate PDF and ZIP drop zones, file pickers, accepted-extension hints, and client-side size checks that mirror backend limits.
-3. Show upload progress, disable repeated submission while a request is active, and allow the user to cancel or retry a user upload where practical.
-4. Present archive totals as summary cards and every file outcome in a filterable results table. Show candidate links for imported/duplicate rows and warnings for review, skipped, or failed rows.
-5. Put “Load built-in CVs” in a clearly administrative section. Hide or disable it when the backend feature is disabled, and enforce role visibility once authentication exists.
-6. Map the backend `ApiError` contract to actionable messages for unsupported files, size limits, unsafe archives, missing records, and evaluation failures. Never expose raw stack traces.
-7. Extend candidate list/detail screens with ingestion status, source, original filename, import date, warnings, and a bounded extracted-text preview.
-8. Add the explicit evaluation workflow: choose an imported candidate and job, submit `/api/evaluations`, then display the composite score and metric breakdown. Do not evaluate automatically after upload.
-9. Add component/service tests for file selection, `FormData`, progress, all result states, duplicate imports, accessibility, and error recovery; add an end-to-end PDF/ZIP ingestion path.
+Implemented behavior:
+
+1. A typed `CvIngestionService` sends PDF/ZIP `FormData`, loads built-in data, retrieves candidates/jobs, and requests evaluation.
+2. Separate PDF and ZIP file pickers enforce extensions and mirror the backend's 20 MB/100 MB limits before submission.
+3. A clearly labelled development/administrative action loads the packaged CV archive.
+4. Active requests disable conflicting actions and show operation-specific loading labels.
+5. Import totals and every per-file status, candidate ID, extracted-text length, and warning are displayed.
+6. Backend `ApiError.message` values are surfaced without exposing stack traces.
+7. Candidate and approved-job selectors refresh after ingestion and evaluation only starts when the user presses **Evaluate candidate**.
+8. The result view shows overall fit, all eight metrics, and the AI explanation.
+9. Service tests verify multipart PDF upload and the explicit candidate/job evaluation request.
+
+Remaining frontend improvements:
+
+- Add drag-and-drop and upload byte-progress/cancellation.
+- Add filtering/pagination for large archive result sets.
+- Link result rows to a dedicated candidate/document detail view with bounded extracted-text preview.
+- Hide the built-in-data action based on authenticated administrator permissions.
+- Add correction/reprocessing screens and richer component/accessibility/end-to-end automation.
 
 ### Frontend acceptance criteria
 
-- [ ] A recruiter can upload one PDF and see its final status and candidate link.
-- [ ] A recruiter can upload one ZIP and inspect every entry outcome without losing partial successes.
-- [ ] An authorized administrator can load the built-in archive and clearly see duplicate results on repeat runs.
-- [ ] `NEEDS_REVIEW`, `SKIPPED`, and `FAILED` states have distinct accessible labels and useful explanations.
-- [ ] Uploading never triggers evaluation; evaluation requires an explicit candidate/job action.
-- [ ] Backend errors and size restrictions are represented consistently and are covered by tests.
+- [x] A recruiter can upload one PDF and see its final status and candidate ID.
+- [x] A recruiter can upload one ZIP and inspect every entry outcome without losing partial successes.
+- [x] The built-in archive can be loaded and duplicate results are visible on repeat runs.
+- [x] `NEEDS_REVIEW`, `SKIPPED`, and `FAILED` states have distinct labels and explanations.
+- [x] Uploading never triggers evaluation; evaluation requires an explicit candidate/job action.
+- [x] Backend errors and size restrictions are represented consistently.
+- [ ] Administrative authorization, candidate detail links, upload progress, and full end-to-end browser tests are complete.
+
+## How to test the complete workflow
+
+### Prerequisites
+
+1. Set `OPENAI_API_KEY` in the environment used by Docker Compose. Both job generation and CV evaluation call the configured model; ingestion itself does not require the key.
+2. From the repository root, run `docker compose up --build`.
+3. Wait until PostgreSQL, backend, and frontend are ready, then open `http://localhost:4200`.
+
+### Job offer generation and approval
+
+1. Open **Generate job**.
+2. Enter a concrete brief such as “Senior Java engineer building Spring Boot APIs with PostgreSQL and Docker” and complete the required fields.
+3. Press **Generate Job Offer** and verify that the preview contains a title, summary, responsibilities, and qualifications.
+4. Optionally edit the generated content, then press **Approve Job Offer**.
+5. Open **Approved jobs** and verify that the approved job appears. Approval is essential because evaluation requires a persisted job ID; a generated preview alone cannot be evaluated.
+
+### CV ingestion
+
+1. Open **CVs & Evaluation**.
+2. For a single-file test, choose a text-based PDF and press **Upload PDF**. Verify `IMPORTED`, a candidate ID, and a non-zero text length.
+3. Upload the same PDF again and verify `DUPLICATE` with the existing candidate ID.
+4. For bulk testing, choose a ZIP containing PDFs and optional unsupported files. Verify that each entry receives its own result and that unsupported files are `SKIPPED` without losing successful imports.
+5. Alternatively, press **Load built-in CVs**. The first run should import the packaged documents; later runs should report duplicates. Image-only or very low-text PDFs should be `NEEDS_REVIEW`.
+
+### Candidate evaluation against the job
+
+1. In Step 2 of **CVs & Evaluation**, select an imported candidate and the approved job created above.
+2. Press **Evaluate candidate**. This is the only action that calls the evaluation model; uploading a CV must not trigger it.
+3. Verify that the response displays an overall score from 0–100, all eight bounded metrics, and an explanation referring to the selected job and CV.
+4. Repeat with a different candidate against the same job to confirm job-specific comparison, or the same candidate against another approved job to confirm that ingestion and evaluation are separate reusable stages.
+
+### Expected failure checks
+
+- Upload a renamed non-PDF file and verify a clear unsupported-file error.
+- Upload a ZIP containing `../` traversal and verify rejection.
+- Attempt evaluation without a candidate or job and verify that the button remains disabled.
+- Stop or misconfigure the AI provider and verify that generation/evaluation show a technical error rather than a valid-looking zero score.
+- Confirm that an ingestion request still works while the AI provider is unavailable.
 
 ## Known evaluation limitations
 
@@ -424,7 +474,7 @@ The frontend is intentionally not part of the current backend change. It should 
 - [x] Document metadata, source, status, extracted text, and result warnings are traceable.
 - [ ] Original binary documents are stored and governed by retention/deletion policy.
 - [ ] OCR and reprocessing are available for scanned PDFs.
-- [ ] Upload and ingestion-result workflows are available in the frontend.
+- [x] Upload, ingestion-result, candidate/job selection, and evaluation workflows are available in the frontend.
 
 ### Required for evaluation production readiness
 
