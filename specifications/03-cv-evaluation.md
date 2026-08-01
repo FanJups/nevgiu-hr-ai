@@ -119,7 +119,7 @@ Unit tests currently cover:
 - Candidate-document persistence, relationships, and unique SHA-256 constraints with an embedded database.
 - Missing candidates and blank CV text without invoking the AI provider.
 
-The current automated baseline is 29 backend tests and 40 Angular browser tests. PostgreSQL/Testcontainers, live-provider, adversarial prompt-injection, and full multi-service end-to-end suites remain future work.
+Test totals are intentionally omitted because they change as coverage grows. PostgreSQL/Testcontainers, live-provider, adversarial prompt-injection, and full multi-service end-to-end suites remain future work.
 
 ## Evaluation metrics
 
@@ -158,6 +158,8 @@ The implemented default weights are:
 The weights total 100%. Custom weights must be finite, non-negative, and total exactly 100% within a small floating-point tolerance. The source groups metrics as 40% skills/experience, 30% education/achievements, and 30% quality/risk; the implemented individual weights are one interpretation of that incomplete formula.
 
 AI confidence should ultimately be separated from candidate quality and used to trigger human verification instead of improving or reducing candidate fit.
+
+Custom weights are supported by the backend API. The current Angular workflow sends the default weights and does not expose weight editing to recruiters.
 
 ## Implemented ingestion backend
 
@@ -275,6 +277,27 @@ Current behavior:
 - Imported candidates are not automatically evaluated.
 - The endpoint can be disabled with `app.cv-ingestion.initial-import-enabled`; role-based administrative access remains to be implemented.
 
+## Evaluation API example
+
+```http
+POST /api/evaluations
+Content-Type: application/json
+```
+
+Use `weights: null` for the documented default weights:
+
+```json
+{
+  "candidateId": 42,
+  "jobId": 7,
+  "weights": null
+}
+```
+
+The response contains an `evaluation` object with its persisted ID, candidate and job IDs, all eight metrics, the overall fit score, explanation, and creation time. It also exposes the explanation at the response's top level for the current frontend contract.
+
+Each successful request creates a new evaluation record. Re-evaluation does not overwrite an earlier row, but there is currently no evaluation history or retrieval endpoint and the prompt/model/source-document versions needed for complete reproducibility are not stored.
+
 ## Implemented data model
 
 Candidate identity and uploaded-document lifecycle are separate concerns. `CvDocument` is related to an optional `Candidate` and contains:
@@ -292,6 +315,10 @@ Candidate identity and uploaded-document lifecycle are separate concerns. `CvDoc
 - Import timestamp
 
 The extracted text is currently retained, but original binary files are not. Production should introduce a storage abstraction; local filesystem storage is sufficient for development and object storage is preferable for deployment.
+
+Candidate names are conservatively derived from filenames and the first valid email address is extracted from CV text. This metadata is best-effort and must be reviewed; it is not identity verification.
+
+CV text is personal data and is sent to the configured OpenAI service only when a recruiter explicitly requests evaluation. A production deployment must establish a lawful processing basis, candidate notice or consent where applicable, provider data-processing terms, access controls, retention/deletion rules, and a correction workflow before real candidate data is used.
 
 ## Implemented ingestion pipeline
 

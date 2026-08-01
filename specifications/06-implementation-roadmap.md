@@ -1,41 +1,49 @@
 # Implementation Roadmap
 
-## Phase 0 — Resolve foundations
+## Phase 0 - Resolve foundations
 
 - [ ] Decide Telegram, WhatsApp, or both.
 - [ ] Finalize the composite scoring formula and individual weights.
 - [ ] Define authentication, roles, organization boundaries, and audit requirements.
 - [ ] Define candidate consent, retention, deletion, and data-residency policies.
-- [ ] Define the supported CV formats and maximum upload size.
-- [ ] Establish API error format, observability, and environment configuration standards.
+- [x] Define the currently supported CV formats and upload limits (PDF, ZIP, 20 MB per file, 100 MB per request).
+- [x] Establish the initial typed API error format and environment configuration.
+- [ ] Define production observability standards.
 - [ ] Replace development credentials and confirm secrets are never committed.
 
 **Exit condition:** Product, security, and scoring decisions are documented and testable.
 
-## Phase 1 — Stabilize job-offer generation
+## Phase 1 - Stabilize job-offer generation
 
-- [ ] Review existing backend job generation and frontend job-offer flows against the feature specification.
+- [x] Review the backend and frontend job-offer flows against the feature specification.
+- [x] Implement generation, edit, regeneration, approval, persistence, and listing behavior.
+- [x] Add prompt-level missing-information and inclusive-language guidance.
+- [x] Add initial frontend and backend unit/component coverage.
 - [ ] Version request, response, prompt, and persistence schemas.
-- [ ] Complete edit, regeneration, approval, and listing behavior.
-- [ ] Add missing-information and inclusive-language checks.
-- [ ] Add unit, integration, and end-to-end coverage.
+- [ ] Add direct approval, job details, lifecycle maintenance, and production-grade failure handling.
+- [ ] Add controller integration and full end-to-end coverage.
 - [ ] Measure latency and draft acceptance/edit rates.
 
 **Exit condition:** A recruiter can generate, review, edit, approve, save, and reopen a job offer reliably.
 
-## Phase 2 — Complete CV ingestion and evaluation
+## Phase 2 - Complete CV ingestion and evaluation
 
-- [ ] Implement secure CV upload and storage.
-- [ ] Parse and normalize CV content.
-- [ ] Complete all eight metrics with evidence and confidence.
-- [ ] Implement validated per-job weight configuration.
-- [ ] Persist versioned evaluations and audit history.
-- [ ] Build candidate list and evaluation-detail UI.
+- [x] Implement guarded PDF, ZIP, and built-in CV upload pipelines.
+- [x] Extract PDF text and conservatively infer candidate name and email.
+- [x] Implement all eight validated metrics and an AI explanation.
+- [x] Implement validated per-request weight configuration in the backend API.
+- [x] Build candidate/job selection and current evaluation-result UI.
+- [ ] Store original CV binaries behind a governed storage abstraction.
+- [ ] Add OCR, metadata correction, and document reprocessing.
+- [ ] Add metric-level evidence and separate reliability confidence from candidate fit.
+- [ ] Expose approved weight configuration in the frontend.
+- [ ] Persist prompt, model, weights, source-document version, and evaluation audit history.
+- [ ] Build candidate details, ingestion history, and evaluation history UI/API.
 - [ ] Validate scoring consistency, bias controls, and adversarial inputs.
 
 **Exit condition:** Uploaded candidates receive explainable, reproducible, human-reviewable evaluations.
 
-## Phase 3 — Add semantic indexing and web chat
+## Phase 3 - Add semantic indexing and web chat
 
 - [ ] Enable pgvector integration currently present but disabled in backend dependencies.
 - [ ] Create embeddings and index CV chunks with authorization metadata.
@@ -46,7 +54,7 @@
 
 **Exit condition:** Authorized users can reliably find and compare candidates through the web chat with evidence-backed answers.
 
-## Phase 4 — Build the dashboard
+## Phase 4 - Build the dashboard
 
 - [ ] Define metric semantics and freshness targets.
 - [ ] Implement aggregate APIs and database indexes.
@@ -57,7 +65,7 @@
 
 **Exit condition:** Recruiters can monitor roles and candidate evaluations and reach source records from every aggregate view.
 
-## Phase 5 — Add external messaging
+## Phase 5 - Add external messaging
 
 - [ ] Implement the selected provider behind a channel-neutral messaging interface.
 - [ ] Link messaging identities to authenticated application users securely.
@@ -67,7 +75,7 @@
 
 **Exit condition:** External chat has security and answer quality equivalent to the web channel.
 
-## Phase 6 — Release readiness
+## Phase 6 - Release readiness
 
 - [ ] Run full unit, integration, end-to-end, performance, and security test suites.
 - [ ] Verify backup, restore, retention, deletion, and incident procedures.

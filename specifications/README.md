@@ -15,8 +15,8 @@ This directory translates `FD - Hackathon KLX 2025.docx` into implementation-ori
 ## Recommended delivery order
 
 1. Confirm the unresolved product and scoring decisions.
-2. Stabilize the existing job-offer workflow.
-3. Complete CV ingestion, evaluation, and persistence.
+2. Harden the implemented job-offer workflow and complete its production controls.
+3. Extend the implemented CV ingestion and evaluation workflow with review, governance, and reproducibility features.
 4. Add vector indexing and conversational candidate search.
 5. Build dashboard APIs and UI from persisted recruitment data.
 6. Add the selected messaging integration after the web chat is stable.
@@ -24,20 +24,16 @@ This directory translates `FD - Hackathon KLX 2025.docx` into implementation-ori
 
 ## Current repository snapshot
 
-The repository already contains:
+| Capability | Status | Notes |
+| --- | --- | --- |
+| Job-offer generation | Implemented, needs hardening | Generate, edit, approve, persist, and list are available. Direct approval, schema-constrained output, lifecycle management, and production security remain. |
+| CV ingestion | Implemented, needs hardening | PDF, ZIP, and built-in imports share a guarded pipeline with extraction, duplicate detection, per-file results, and Angular UI. OCR, original-file storage, correction, and governance remain. |
+| Candidate evaluation | Implemented, needs hardening | Explicit job-specific AI evaluation, eight validated metrics, weighting, persistence, and result UI are available. Evidence, versioning, retrieval/history, and bias testing remain. |
+| CV database chat | Planned | pgvector is available in the database image, but vector indexing, retrieval, and conversation memory are not implemented. |
+| Interactive dashboard | Planned | Aggregate APIs and dashboard UI are not implemented. |
+| External messaging | Planned | Telegram/WhatsApp choice and integration remain open. |
+| Production security | Planned | Authentication, authorization, tenant isolation, restricted CORS, audit logging, malware scanning, and retention controls remain. |
 
-- An Angular 19 frontend with job-offer generation, preview, approval, and listing components.
-- A Spring Boot 3 / Java 21 backend with job generation, candidate, and CV evaluation domains.
-- PostgreSQL with the pgvector image in Docker Compose.
-- Spring AI and OpenAI model integration.
-
-The repository does not yet visibly contain complete implementations for:
-
-- CV upload and document parsing.
-- Enabled pgvector/Spring AI vector-store integration.
-- Conversational CV search and conversation memory.
-- Telegram or WhatsApp integration.
-- The interactive recruitment dashboard.
-- Authentication, authorization, and audit logging.
+The application uses an Angular 19 frontend, a Spring Boot 3 / Java 21 backend, PostgreSQL with the pgvector image, and Spring AI with OpenAI.
 
 > This snapshot is based on the source tree at the time these Markdown files were created. Keep it updated as features are delivered.

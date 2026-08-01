@@ -89,9 +89,44 @@ Frontend tests cover portions of:
 - Preview, loading, empty, and missing-information states.
 - Approved-job listing rendering.
 
+Test counts are intentionally not recorded here because they change as coverage grows. The backend suites are under `backend/src/test`, and the Angular `*.spec.ts` files live beside the frontend code they exercise.
+
+## API examples
+
+### Generate an unsaved draft
+
+```http
+POST /api/jobs/generate
+Content-Type: application/json
+```
+
+```json
+{
+  "briefDescription": "Senior Java engineer building Spring Boot APIs",
+  "department": "Engineering",
+  "location": "Lisbon or remote",
+  "employmentType": "Full-time",
+  "salaryRange": null,
+  "tone": "inclusive"
+}
+```
+
+The response contains `jobOffer`, `missingInfo`, and `suggestions`. Generation does not write a job to the database.
+
+### Approve and persist a reviewed draft
+
+```http
+POST /api/jobs/approve
+Content-Type: application/json
+```
+
+The approval request contains the final generated or edited offer together with its original generation request. The current frontend exposes approval after the recruiter enters edit mode. A successful approval creates the job ID required by candidate evaluation.
+
+OpenAI configuration is supplied through `OPENAI_API_KEY`. Generation errors or malformed model output must be treated as technical failures for human review; generated content should never be assumed correct solely because it is structurally valid.
+
 ## Known limitations
 
-1. **Approved-list contract mismatch:** the backend `Job` response contains `title`, but the Angular listing expects `inferredTitle`. Approved titles can therefore render blank.
+1. **Approved-list contract is transitional:** the backend `Job` response contains `title`; the Angular listing currently supports both `title` and `inferredTitle`. A dedicated response DTO should make the contract canonical.
 2. **Approval is hidden until editing:** the Approve button is only rendered in edit mode. A correct unchanged draft cannot be approved directly.
 3. **Suggestions are not displayed:** the API returns `suggestions`, but the preview only renders `missingInfo`.
 4. **Backend input validation is missing:** API records do not use Bean Validation, so clients can bypass the Angular form rules.

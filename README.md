@@ -43,6 +43,8 @@ OPENAI_API_KEY=your-openai-api-key
 
 The key is passed to the backend container and is required for AI job-offer generation. Do not commit the `.env` file or expose the key in logs or screenshots.
 
+CV ingestion and text extraction do not call OpenAI. An API key is required only when generating a job offer or explicitly evaluating a candidate against an approved job.
+
 ### 3. Build and start the application
 
 From the repository root, run:
@@ -77,10 +79,63 @@ Expected response:
 
 - Frontend: [http://localhost:4200](http://localhost:4200)
 - Jobs API: [http://localhost:8080/api/jobs](http://localhost:8080/api/jobs)
+- Candidates API: [http://localhost:8080/api/candidates](http://localhost:8080/api/candidates)
 - Backend health: [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
 - PostgreSQL: `localhost:5433`
 
 The PostgreSQL container listens on port `5432` inside the Docker network and is exposed as `5433` on the host to avoid conflicts with another local PostgreSQL instance.
+
+## Complete recruitment workflow
+
+1. Open **Generate job**, enter a role description, and generate a job-offer draft.
+2. Review the draft. Select **Edit**, make any required changes, and approve it. Only approved jobs are persisted and available for candidate evaluation.
+3. Open **CVs & Evaluation**.
+4. Import one PDF, a ZIP archive, or the packaged built-in CV dataset.
+5. Select an imported candidate and an approved job, then select **Evaluate candidate**.
+6. Review the overall fit score, eight individual metrics, and AI explanation. Scores are decision-support information and do not replace human review.
+
+Uploading a CV never starts an evaluation automatically. This makes ingestion reusable and prevents unexpected model calls: the same candidate can be evaluated against different approved jobs.
+
+### CV import options and outcomes
+
+The frontend supports:
+
+- A single text-based PDF, limited to 20 MB.
+- A ZIP archive containing PDFs, limited to a 100 MB request.
+- The built-in archive packaged at `backend/src/main/resources/intial/CVs.zip` for development and demonstration.
+
+Each document receives one of these outcomes:
+
+| Status | Meaning |
+| --- | --- |
+| `IMPORTED` | Text was extracted and a candidate was created. |
+| `DUPLICATE` | The same file content was imported previously; no duplicate candidate was created. |
+| `NEEDS_REVIEW` | Too little usable text was extracted, commonly because OCR is required. |
+| `SKIPPED` | The archive entry is unsupported or is not a PDF. |
+| `FAILED` | Validation, extraction, or persistence failed for that entry. |
+
+Candidate names are conservatively inferred from filenames and email addresses from extracted text. Review inferred metadata before relying on it. The application currently retains extracted text and document metadata, but not the original PDF binary.
+
+## Run automated tests
+
+Run backend tests:
+
+```bash
+cd backend
+./mvnw test
+```
+
+On Windows PowerShell, use `./mvnw.cmd test`.
+
+Run frontend tests:
+
+```bash
+cd frontend
+npm ci
+npm test -- --watch=false
+```
+
+The automated suites use mocked AI dependencies; an OpenAI API key is not required for these tests.
 
 ## Useful Docker commands
 
@@ -115,6 +170,8 @@ docker compose down -v
 ```
 
 > `docker compose down -v` permanently deletes the local PostgreSQL data managed by this Compose project.
+
+This includes approved jobs, candidates, CV document metadata and extracted text, and persisted evaluations.
 
 ## Troubleshooting
 
