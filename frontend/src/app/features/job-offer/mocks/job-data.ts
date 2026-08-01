@@ -5,7 +5,7 @@ import { JobGenerationRequest } from '../models/job-generation.models';
 export const MOCK_GENERATED_JOB_OFFER: GeneratedJobOffer = {
     inferredTitle: 'Senior Backend Engineer',
     level: 'Senior',
-    summary: 'Design and build scalable backend services for our AI-driven finance platform. Lead technical design, ensure reliability and performance, and mentor junior engineers.',
+    summary: 'Design and build scalable backend services for our AI-driven HR platform. Lead technical design, ensure reliability and performance, and mentor junior engineers.',
     responsibilities: [
         'Design, implement and maintain RESTful APIs and microservices',
         'Collaborate with data scientists to productionize ML models',
@@ -46,7 +46,7 @@ export const MOCK_JOB_GENERATION_RESPONSE: JobGenerationResponse = {
     jobOffer: {
         inferredTitle: 'Senior Backend Engineer',
         level: 'Senior',
-        summary: 'Design and build scalable backend services for our AI-driven finance platform. Lead technical design, ensure reliability and performance, and mentor junior engineers.',
+        summary: 'Design and build scalable backend services for our AI-driven HR platform. Lead technical design, ensure reliability and performance, and mentor junior engineers.',
         responsibilities: [
             'Design, implement and maintain RESTful APIs and microservices',
             'Collaborate with data scientists to productionize ML models',
@@ -95,7 +95,7 @@ export const MOCK_JOB_GENERATION_RESPONSE: JobGenerationResponse = {
 };
 
 export const MOCK_JOB_GENERATION_REQUEST: JobGenerationRequest = {
-    briefDescription: 'Build and maintain backend services for an AI-driven finance platform. Responsible for service design, performance, and collaborating with data scientists to productionize models.',
+    briefDescription: 'Build and maintain backend services for an AI-driven HR platform. Responsible for service design, performance, and collaborating with data scientists to productionize models.',
     department: 'Engineering',
     location: 'Remote (US)',
     employmentType: 'Full-time',

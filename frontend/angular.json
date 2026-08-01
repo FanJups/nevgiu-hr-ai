@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "finance-ai-frontend": {
+    "hr-ai-frontend": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/finance-ai-frontend",
+            "outputPath": "dist/hr-ai-frontend",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
@@ -60,10 +60,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "finance-ai-frontend:build:production"
+              "buildTarget": "hr-ai-frontend:build:production"
             },
             "development": {
-              "buildTarget": "finance-ai-frontend:build:development"
+              "buildTarget": "hr-ai-frontend:build:development"
             }
           },
           "defaultConfiguration": "development"

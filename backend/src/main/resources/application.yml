@@ -3,8 +3,8 @@ spring:
     name: hr-ai-recruitment
 
   datasource:
-    url: jdbc:postgresql://db:5432/finance_ai
-    username: finance_user
+    url: jdbc:postgresql://db:5432/hr_ai
+    username: hr_user
     password: super-secret
     driver-class-name: org.postgresql.Driver
 

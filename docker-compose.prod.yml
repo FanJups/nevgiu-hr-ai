@@ -13,7 +13,7 @@ services:
     restart: unless-stopped
 
   backend:
-    image: hack6nov2025/nevgiu-hr-ai/finance-ai-backend:latest
+    image: hack6nov2025/nevgiu-hr-ai/hr-ai-backend:latest
     environment:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
@@ -28,7 +28,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: hack6nov2025/nevgiu-hr-ai/finance-ai-frontend:latest
+    image: hack6nov2025/nevgiu-hr-ai/hr-ai-frontend:latest
     ports:
       - "80:80"
     depends_on:
