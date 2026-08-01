@@ -21,6 +21,11 @@ spring:
   ai:
     openai:
       api-key: ${OPENAI_API_KEY}
+
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 100MB
 #      embedding:
 #    vectorstore:
 #      pgvector:
@@ -34,3 +39,14 @@ management:
     web:
       exposure:
         include: health,info
+
+app:
+  cv-ingestion:
+    max-pdf-size: 20971520
+    max-archive-size: 104857600
+    max-archive-entries: 100
+    max-expanded-size: 104857600
+    max-compression-ratio: 100
+    minimum-text-length: 50
+    initial-resource: classpath:intial/CVs.zip
+    initial-import-enabled: true

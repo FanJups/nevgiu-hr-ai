@@ -6,6 +6,7 @@ import com.nevgiu.hrai.evaluation.dto.EvaluationWeights;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CvEvaluationServiceTest {
 
@@ -43,10 +44,9 @@ class CvEvaluationServiceTest {
                 null, new ObjectMapper(), null, null, null
         );
 
-        AiEvaluationResult result = service.parseModelResponse("NOT JSON");
-
-        assertThat(result.scores().skillsMatchScore()).isEqualTo(0);
-        assertThat(result.explanation()).contains("Failed to parse");
+        assertThatThrownBy(() -> service.parseModelResponse("NOT JSON"))
+                .isInstanceOf(EvaluationException.class)
+                .hasMessage("AI evaluation returned an invalid response");
     }
 
     @Test
@@ -74,5 +74,38 @@ class CvEvaluationServiceTest {
 
         assertThat(overall).isBetween(0, 100);
         assertThat(overall).isGreaterThan(70);
+    }
+
+    @Test
+    void computeComposite_rejectsWeightsThatDoNotTotalOne() {
+        CvEvaluationService service = new CvEvaluationService(
+                null, new ObjectMapper(), null, null, null
+        );
+
+        AiEvaluationResult.Scores scores = new AiEvaluationResult.Scores(
+                80, 8, 7, 6, 70, 9, 8, 90
+        );
+        EvaluationWeights invalid = new EvaluationWeights(
+                0.25, 0.15, 0.15, 0.15, 0.10, 0.10, 0.05, 0.10
+        );
+
+        assertThatThrownBy(() -> service.computeComposite(scores, invalid))
+                .isInstanceOf(EvaluationException.class)
+                .hasMessage("Evaluation weights must total 1.0");
+    }
+
+    @Test
+    void computeComposite_rejectsOutOfRangeScores() {
+        CvEvaluationService service = new CvEvaluationService(
+                null, new ObjectMapper(), null, null, null
+        );
+
+        AiEvaluationResult.Scores scores = new AiEvaluationResult.Scores(
+                101, 8, 7, 6, 70, 9, 8, 90
+        );
+
+        assertThatThrownBy(() -> service.computeComposite(scores, service.defaultWeights()))
+                .isInstanceOf(EvaluationException.class)
+                .hasMessage("AI evaluation returned scores outside the allowed ranges");
     }
 }

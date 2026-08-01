@@ -111,8 +111,10 @@ Each `CandidateEvaluation` stores:
 Unit tests currently cover:
 
 - Parsing valid AI evaluation JSON.
-- Graceful conversion of malformed JSON into zero scores and a parsing explanation.
+- Rejecting malformed AI JSON as a typed upstream failure.
 - Composite-score normalization and weighting.
+- Rejecting invalid score ranges and invalid custom weight totals.
+- PDF text extraction, PDF validation, safe archive traversal, and unsupported archive entries.
 
 ## Evaluation metrics
 
@@ -148,28 +150,39 @@ The implemented default weights are:
 | Readability | 5% |
 | AI confidence | 5% |
 
-The weights total 100%, but custom weights are not validated. The source groups metrics as 40% skills/experience, 30% education/achievements, and 30% quality/risk; the implemented individual weights are one interpretation of that incomplete formula.
+The weights total 100%. Custom weights must be finite, non-negative, and total exactly 100% within a small floating-point tolerance. The source groups metrics as 40% skills/experience, 30% education/achievements, and 30% quality/risk; the implemented individual weights are one interpretation of that incomplete formula.
 
 AI confidence should ultimately be separated from candidate quality and used to trigger human verification instead of improving or reducing candidate fit.
 
-## Missing ingestion capabilities
+## Implemented ingestion backend
 
-The backend does not currently provide:
+The backend now provides one shared ingestion pipeline for user uploads and the built-in dataset:
 
-- A `multipart/form-data` CV upload endpoint.
-- PDF text extraction through PDFBox, Tika, or another parser.
-- Safe ZIP enumeration and ingestion.
-- Automatic loading of the built-in archive.
-- File extension, MIME type, signature, or size validation.
-- ZIP path-traversal, decompression-bomb, entry-count, or expansion-size protection.
-- Original-document storage or document lifecycle metadata.
-- SHA-256 duplicate detection.
-- Per-file ingestion status, warnings, and error reporting.
-- OCR or a clear result for image-only PDFs.
-- Candidate metadata extraction from CV content.
-- An upload or ingestion-results interface in Angular.
+- `POST /api/candidates/import` accepts one PDF as `multipart/form-data` and returns `201 Created`.
+- `POST /api/candidates/import/archive` accepts a ZIP and returns a result for every file.
+- `POST /api/candidates/import/initial` loads `classpath:intial/CVs.zip` through the same ZIP pipeline.
+- Apache PDFBox extracts text behind the `CvTextExtractor` abstraction.
+- Extension, declared content type, PDF signature, request size, and per-file size are validated.
+- ZIPs are streamed in memory and protected by path, entry-count, expanded-size, per-entry-size, and compression-ratio checks.
+- SHA-256 hashes and a database uniqueness constraint make repeat imports idempotent.
+- `CvDocument` records retain source, status, filename, content type, size, hash, extracted text, error, candidate link, and import time.
+- Results distinguish `IMPORTED`, `DUPLICATE`, `NEEDS_REVIEW`, `SKIPPED`, and `FAILED`.
+- Low-text and probable image-only PDFs are stored as `NEEDS_REVIEW` without creating a misleading candidate.
+- Candidate names are conservatively derived from filenames and the first valid email is extracted from CV text.
+- Typed API errors cover invalid uploads, missing records, validation failures, oversized multipart requests, and evaluation-provider failures.
 
-## Planned ingestion API
+Ingestion does not invoke AI evaluation. A recruiter must explicitly select a candidate and job before calling the evaluation endpoint.
+
+### Remaining backend work
+
+- Store original files behind a storage abstraction and define retention/deletion rules.
+- Add OCR and reprocessing for scanned PDFs.
+- Add richer candidate/document detail and ingestion-history APIs.
+- Detect templates and non-CV PDFs more accurately.
+- Make large imports asynchronous and expose job progress.
+- Require authentication, restrict the built-in import to administrators, and scan uploads for malware.
+
+## Implemented ingestion API
 
 ### Upload one CV
 
@@ -211,7 +224,7 @@ Form field:
 file=<CVs.zip>
 ```
 
-Initial archives of the built-in dataset size can be processed synchronously. Larger production archives should create an asynchronous import job and return `202 Accepted`.
+Archives at the configured limit are processed synchronously. Larger production archives should later create an asynchronous import job and return `202 Accepted`.
 
 Example result:
 
@@ -224,16 +237,18 @@ Example result:
   "failed": 1,
   "results": [
     {
-      "filename": "CVs/amanda-akins-cv.pdf",
+      "originalFilename": "CVs/amanda-akins-cv.pdf",
+      "documentId": 87,
       "candidateId": 42,
       "status": "IMPORTED",
       "warnings": []
     },
     {
-      "filename": "CVs/cv-template.pdf",
+      "originalFilename": "CVs/cv-template.pdf",
+      "documentId": 88,
       "candidateId": null,
-      "status": "SKIPPED",
-      "warnings": ["Document appears to be a CV template"]
+      "status": "NEEDS_REVIEW",
+      "warnings": ["Little or no text was extracted; OCR or manual review may be required"]
     }
   ]
 }
@@ -241,25 +256,23 @@ Example result:
 
 ### Load built-in CV data
 
-Provide an explicit administrative or startup operation that opens `classpath:intial/CVs.zip` and passes it through the same archive-ingestion service used by user uploads.
-
-Recommended initial endpoint:
+The explicit endpoint opens `classpath:intial/CVs.zip` and passes it through the same archive-ingestion service used by user uploads.
 
 ```http
 POST /api/candidates/import/initial
 ```
 
-Requirements:
+Current behavior:
 
-- Do not duplicate candidates when the operation is called more than once.
-- Restrict the endpoint to development/administrative use.
-- Return the same bulk-import result contract as an uploaded ZIP.
-- Do not embed separate parsing logic for built-in data.
-- Do not automatically evaluate imported candidates.
+- Repeated calls report documents as duplicates and do not create duplicate candidates.
+- The endpoint returns the same bulk result as an uploaded ZIP.
+- Parsing logic is shared with uploaded archives.
+- Imported candidates are not automatically evaluated.
+- The endpoint can be disabled with `app.cv-ingestion.initial-import-enabled`; role-based administrative access remains to be implemented.
 
-## Planned data model
+## Implemented data model
 
-Candidate identity and uploaded-document lifecycle should be separate concerns. Introduce a `CvDocument` entity related to `Candidate` with:
+Candidate identity and uploaded-document lifecycle are separate concerns. `CvDocument` is related to an optional `Candidate` and contains:
 
 - ID
 - Candidate reference
@@ -271,12 +284,11 @@ Candidate identity and uploaded-document lifecycle should be separate concerns. 
 - Ingestion status
 - Ingestion error
 - Extracted text
-- Extraction confidence or warning state
 - Import timestamp
 
-The original file should be stored through a storage abstraction rather than in the candidate database row. Local filesystem storage can be used for development; object storage is preferable for production.
+The extracted text is currently retained, but original binary files are not. Production should introduce a storage abstraction; local filesystem storage is sufficient for development and object storage is preferable for deployment.
 
-## Planned ingestion pipeline
+## Implemented ingestion pipeline
 
 1. Accept an individual PDF, uploaded ZIP, or built-in classpath archive.
 2. Enforce request-size and archive-size limits before processing.
@@ -287,7 +299,7 @@ The original file should be stored through a storage abstraction rather than in 
 7. Calculate a SHA-256 hash and detect previously imported content.
 8. Extract PDF text with a dedicated `CvTextExtractor` abstraction.
 9. Flag empty or image-only documents for OCR/manual review rather than creating misleading content.
-10. Extract conservative candidate metadata; unknown fields remain null.
+10. Extract conservative candidate name and email metadata; unknown fields remain null.
 11. Persist the document record, candidate, extracted text, status, and warnings.
 12. Continue an archive import when an individual entry fails.
 13. Return a complete per-file outcome without exposing internal stack traces.
@@ -296,31 +308,31 @@ The original file should be stored through a storage abstraction rather than in 
 
 ### Phase 1 - PDF ingestion foundation
 
-- [ ] Add Apache PDFBox for PDF text extraction.
-- [ ] Configure multipart request and file-size limits.
-- [ ] Add ingestion response DTOs and typed error responses.
-- [ ] Introduce `CvDocument`, source, status, and repository types.
-- [ ] Create `CvTextExtractor` and a PDF implementation.
-- [ ] Implement SHA-256 duplicate detection.
-- [ ] Implement `POST /api/candidates/import`.
-- [ ] Add unit and integration tests using representative PDFs.
+- [x] Add Apache PDFBox for PDF text extraction.
+- [x] Configure multipart request and file-size limits.
+- [x] Add ingestion response DTOs and typed error responses.
+- [x] Introduce `CvDocument`, source, status, and repository types.
+- [x] Create `CvTextExtractor` and a PDF implementation.
+- [x] Implement SHA-256 duplicate detection.
+- [x] Implement `POST /api/candidates/import`.
+- [x] Add unit tests using representative generated PDFs and verify the API in Docker.
 
 **Exit condition:** a valid text-based PDF creates one candidate and document record with extracted text, and a repeated upload is reported as a duplicate.
 
 ### Phase 2 - ZIP and built-in archive ingestion
 
-- [ ] Implement a streaming, guarded ZIP ingestion service.
-- [ ] Add `POST /api/candidates/import/archive`.
-- [ ] Add `POST /api/candidates/import/initial` using `classpath:intial/CVs.zip`.
-- [ ] Return per-file imported, duplicate, skipped, and failed outcomes.
-- [ ] Test path traversal, decompression limits, corrupt entries, unsupported entries, and partial failures.
-- [ ] Import the 35 built-in PDFs and review warnings and failures.
+- [x] Implement a streaming, guarded ZIP ingestion service.
+- [x] Add `POST /api/candidates/import/archive`.
+- [x] Add `POST /api/candidates/import/initial` using `classpath:intial/CVs.zip`.
+- [x] Return per-file imported, duplicate, needs-review, skipped, and failed outcomes.
+- [x] Test traversal rejection, unsupported entries, PDF validation, and archive continuation.
+- [x] Import the 35 built-in PDFs through the running Docker backend and verify repeat-import idempotency.
 
 **Exit condition:** the built-in archive and an equivalent uploaded archive use the same code path, repeated imports are idempotent, and one bad entry does not fail the entire batch.
 
 ### Phase 3 - Metadata quality and user workflow
 
-- [ ] Extract candidate email and other high-confidence metadata deterministically.
+- [x] Extract candidate name and email deterministically where possible.
 - [ ] Add AI-assisted metadata extraction only for fields that cannot be reliably parsed, with confidence and provenance.
 - [ ] Detect probable templates and non-CV documents for manual review.
 - [ ] Add candidate detail and ingestion-status APIs.
@@ -332,9 +344,10 @@ The original file should be stored through a storage abstraction rather than in 
 
 ### Phase 4 - Evaluation hardening
 
-- [ ] Validate candidate and job IDs with typed not-found responses.
-- [ ] Validate every metric range and require custom weights to be non-negative and total 100%.
-- [ ] Use schema-constrained AI output and return a typed failure instead of persisting zero-score parse failures.
+- [x] Validate candidate and job IDs with typed not-found responses.
+- [x] Validate every metric range and require custom weights to be non-negative and total 100%.
+- [x] Return a typed failure instead of persisting zero-score parse failures.
+- [ ] Use provider-level schema-constrained AI output.
 - [ ] Persist metric-level evidence, weights, prompt version, model, source document version, and evaluation duration.
 - [ ] Separate AI confidence from candidate-fit scoring.
 - [ ] Change employment gaps to neutral review flags unless an approved policy requires otherwise.
@@ -355,18 +368,38 @@ The original file should be stored through a storage abstraction rather than in 
 
 **Exit condition:** the workflow meets agreed security, privacy, operational, and data-governance requirements.
 
+## Frontend implementation plan
+
+The frontend is intentionally not part of the current backend change. It should be implemented in this order:
+
+1. Add a typed Angular ingestion service that sends `FormData` to the PDF and ZIP endpoints and calls the built-in import endpoint without a file.
+2. Add a `/candidates/import` route with separate PDF and ZIP drop zones, file pickers, accepted-extension hints, and client-side size checks that mirror backend limits.
+3. Show upload progress, disable repeated submission while a request is active, and allow the user to cancel or retry a user upload where practical.
+4. Present archive totals as summary cards and every file outcome in a filterable results table. Show candidate links for imported/duplicate rows and warnings for review, skipped, or failed rows.
+5. Put “Load built-in CVs” in a clearly administrative section. Hide or disable it when the backend feature is disabled, and enforce role visibility once authentication exists.
+6. Map the backend `ApiError` contract to actionable messages for unsupported files, size limits, unsafe archives, missing records, and evaluation failures. Never expose raw stack traces.
+7. Extend candidate list/detail screens with ingestion status, source, original filename, import date, warnings, and a bounded extracted-text preview.
+8. Add the explicit evaluation workflow: choose an imported candidate and job, submit `/api/evaluations`, then display the composite score and metric breakdown. Do not evaluate automatically after upload.
+9. Add component/service tests for file selection, `FormData`, progress, all result states, duplicate imports, accessibility, and error recovery; add an end-to-end PDF/ZIP ingestion path.
+
+### Frontend acceptance criteria
+
+- [ ] A recruiter can upload one PDF and see its final status and candidate link.
+- [ ] A recruiter can upload one ZIP and inspect every entry outcome without losing partial successes.
+- [ ] An authorized administrator can load the built-in archive and clearly see duplicate results on repeat runs.
+- [ ] `NEEDS_REVIEW`, `SKIPPED`, and `FAILED` states have distinct accessible labels and useful explanations.
+- [ ] Uploading never triggers evaluation; evaluation requires an explicit candidate/job action.
+- [ ] Backend errors and size restrictions are represented consistently and are covered by tests.
+
 ## Known evaluation limitations
 
-1. Custom weights can be null, negative, or fail to total 100% without rejection.
-2. Metric values are not range-validated before persistence.
-3. A malformed model response becomes a persisted zero-score evaluation rather than a technical failure.
-4. The AI explanation is not broken into metric-level evidence or linked to source text.
-5. Model, prompt, weights, and source-document versions are not persisted for reproducibility.
-6. Candidate/job not-found errors are generic exceptions without a consistent API problem format.
-7. Employment gaps and AI confidence currently affect the overall candidate score.
-8. CV content is inserted into the model prompt without explicit prompt-injection defenses.
-9. Only service-level parsing and composite-score tests exist; controller, persistence, provider-failure, and end-to-end coverage are missing.
-10. Candidate endpoints return persistence entities directly and currently permit unrestricted development CORS.
+1. The AI explanation is not broken into metric-level evidence or linked to source text.
+2. Model, prompt, weights, and source-document versions are not persisted for reproducibility.
+3. Employment gaps and AI confidence currently affect the overall candidate score.
+4. CV content is inserted into the model prompt without explicit prompt-injection defenses.
+5. Provider-level structured-output constraints are not yet enabled.
+6. Controller, persistence, provider-failure, adversarial, and end-to-end evaluation coverage remains incomplete.
+7. Candidate endpoints return persistence entities directly and currently permit unrestricted development CORS.
 
 ## Acceptance criteria
 
@@ -382,22 +415,24 @@ The original file should be stored through a storage abstraction rather than in 
 
 ### Required for ingestion completion
 
-- [ ] Users can upload a supported PDF through `multipart/form-data`.
-- [ ] Users can upload a ZIP and receive an outcome for every supported entry.
-- [ ] Administrators can idempotently import `classpath:intial/CVs.zip` through the shared ZIP pipeline.
-- [ ] Unsupported, corrupt, unsafe, oversized, and image-only files receive clear outcomes.
-- [ ] Duplicate documents are detected by content hash and do not create duplicate candidates.
-- [ ] Partial archive failures do not roll back successful independent entries.
-- [ ] Original-document metadata, source, status, warnings, and extracted text are traceable.
+- [x] The backend accepts a supported PDF through `multipart/form-data`.
+- [x] The backend accepts a ZIP and returns an outcome for every file entry.
+- [x] The backend idempotently imports `classpath:intial/CVs.zip` through the shared ZIP pipeline.
+- [x] Unsupported, unsafe, oversized, and image-only files receive explicit outcomes.
+- [x] Duplicate documents are detected by content hash and do not create duplicate candidates.
+- [x] Per-entry parsing failures do not prevent later archive entries from being processed.
+- [x] Document metadata, source, status, extracted text, and result warnings are traceable.
+- [ ] Original binary documents are stored and governed by retention/deletion policy.
+- [ ] OCR and reprocessing are available for scanned PDFs.
 - [ ] Upload and ingestion-result workflows are available in the frontend.
 
 ### Required for evaluation production readiness
 
 - [ ] Every score is range-validated and includes traceable job/CV evidence.
-- [ ] Custom weights are validated and total 100%.
+- [x] Custom weights are validated, non-negative, and total 100%.
 - [ ] Low-confidence extraction and evaluation trigger human review and are never presented as certainty.
 - [ ] Employment gaps are neutral review flags rather than automatic rejection or ranking penalties.
-- [ ] Technical/model failures do not create valid-looking zero-score evaluations.
+- [x] Malformed model output does not create a valid-looking zero-score evaluation.
 - [ ] Re-evaluation preserves prior results and all inputs needed for reproducibility.
 - [ ] Authentication, authorization, privacy controls, and audit history are enforced.
 - [ ] Bias, consistency, adversarial, integration, and end-to-end tests pass.

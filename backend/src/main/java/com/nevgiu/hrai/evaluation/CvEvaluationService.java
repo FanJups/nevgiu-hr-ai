@@ -10,15 +10,14 @@ import com.nevgiu.hrai.evaluation.dto.EvaluationResponse;
 import com.nevgiu.hrai.evaluation.dto.EvaluationWeights;
 import com.nevgiu.hrai.job.Job;
 import com.nevgiu.hrai.job.JobRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.Instant;
 
 @Service
-@RequiredArgsConstructor
 public class CvEvaluationService {
 
     private final ChatClient chatClient;
@@ -27,11 +26,29 @@ public class CvEvaluationService {
     private final JobRepository jobRepository;
     private final CandidateEvaluationRepository evaluationRepository;
 
+    public CvEvaluationService(
+            ChatClient chatClient,
+            ObjectMapper objectMapper,
+            CandidateRepository candidateRepository,
+            JobRepository jobRepository,
+            CandidateEvaluationRepository evaluationRepository
+    ) {
+        this.chatClient = chatClient;
+        this.objectMapper = objectMapper;
+        this.candidateRepository = candidateRepository;
+        this.jobRepository = jobRepository;
+        this.evaluationRepository = evaluationRepository;
+    }
+
     public EvaluationResponse evaluateCandidate(EvaluationRequest request) {
         Candidate candidate = candidateRepository.findById(request.candidateId())
-                .orElseThrow(() -> new IllegalArgumentException("Candidate not found"));
+                .orElseThrow(() -> new EvaluationException(HttpStatus.NOT_FOUND, "Candidate not found"));
         Job job = jobRepository.findById(request.jobId())
-                .orElseThrow(() -> new IllegalArgumentException("Job not found"));
+                .orElseThrow(() -> new EvaluationException(HttpStatus.NOT_FOUND, "Job not found"));
+
+        if (candidate.getCvText() == null || candidate.getCvText().isBlank()) {
+            throw new EvaluationException(HttpStatus.UNPROCESSABLE_ENTITY, "Candidate has no extracted CV text");
+        }
 
         String systemPrompt = buildSystemPrompt();
         String userPrompt = buildUserPrompt(job, candidate);
@@ -48,6 +65,9 @@ public class CvEvaluationService {
         EvaluationWeights weights = (request.weights() != null)
                 ? request.weights()
                 : defaultWeights();
+
+        validateScores(aiResult.scores());
+        validateWeights(weights);
 
         int overall = computeComposite(aiResult.scores(), weights);
 
@@ -122,10 +142,7 @@ public class CvEvaluationService {
         try {
             return objectMapper.readValue(json, AiEvaluationResult.class);
         } catch (IOException e) {
-            AiEvaluationResult.Scores scores = new AiEvaluationResult.Scores(
-                    0, 0, 0, 0, 0, 0, 0, 0
-            );
-            return new AiEvaluationResult(scores, "Failed to parse model response: " + e.getMessage());
+            throw new EvaluationException(HttpStatus.BAD_GATEWAY, "AI evaluation returned an invalid response");
         }
     }
 
@@ -144,6 +161,8 @@ public class CvEvaluationService {
     }
 
     int computeComposite(AiEvaluationResult.Scores s, EvaluationWeights w) {
+        validateScores(s);
+        validateWeights(w);
         double skills = normalize100(s.skillsMatchScore()) * w.skillsWeight();
         double exp = normalize10(s.experienceRelevanceScore()) * w.experienceWeight();
         double edu = normalize10(s.educationFitScore()) * w.educationWeight();
@@ -159,6 +178,42 @@ public class CvEvaluationService {
 
         double overall = (skills + exp + edu + ach + kw + gap + read + conf) / totalWeight;
         return (int) Math.round(overall);
+    }
+
+    void validateScores(AiEvaluationResult.Scores scores) {
+        if (scores == null
+                || !between(scores.skillsMatchScore(), 0, 100)
+                || !between(scores.experienceRelevanceScore(), 0, 10)
+                || !between(scores.educationFitScore(), 0, 10)
+                || !between(scores.achievementImpactScore(), 0, 10)
+                || !between(scores.keywordDensityScore(), 0, 100)
+                || !between(scores.employmentGapScore(), 0, 10)
+                || !between(scores.readabilityScore(), 0, 10)
+                || !between(scores.aiConfidenceScore(), 0, 100)) {
+            throw new EvaluationException(HttpStatus.BAD_GATEWAY, "AI evaluation returned scores outside the allowed ranges");
+        }
+    }
+
+    void validateWeights(EvaluationWeights weights) {
+        double[] values = {
+                weights.skillsWeight(), weights.experienceWeight(), weights.educationWeight(),
+                weights.achievementWeight(), weights.qualityWeight(), weights.gapWeight(),
+                weights.readabilityWeight(), weights.confidenceWeight()
+        };
+        double total = 0;
+        for (double value : values) {
+            if (!Double.isFinite(value) || value < 0) {
+                throw new EvaluationException(HttpStatus.BAD_REQUEST, "Evaluation weights must be finite and non-negative");
+            }
+            total += value;
+        }
+        if (Math.abs(total - 1.0) > 0.000001) {
+            throw new EvaluationException(HttpStatus.BAD_REQUEST, "Evaluation weights must total 1.0");
+        }
+    }
+
+    private boolean between(int value, int minimum, int maximum) {
+        return value >= minimum && value <= maximum;
     }
 
     double normalize10(int x) {
