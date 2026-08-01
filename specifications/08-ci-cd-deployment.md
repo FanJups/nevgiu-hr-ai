@@ -260,14 +260,32 @@ Recommended directory layout on each VPS:
 
 Use Caddy or Traefik as the public reverse proxy and automatic TLS terminator.
 
-Suggested hostnames:
+Canonical HR AI hostnames:
 
 ```text
-staging.example.com
-api-staging.example.com
-app.example.com
-api.example.com
+staging-hr.nevgiuai.com
+staging-api.hr.nevgiuai.com
+hr.nevgiuai.com
+api.hr.nevgiuai.com
 ```
+
+The reusable Nevgiu AI convention is:
+
+| Environment | Frontend | Backend API |
+| --- | --- | --- |
+| Production | `<project>.nevgiuai.com` | `api.<project>.nevgiuai.com` |
+| Staging | `staging-<project>.nevgiuai.com` | `staging-api.<project>.nevgiuai.com` |
+
+For this application, `<project>` is `hr`. The apex `nevgiuai.com` remains available for the Nevgiu AI company and project portal.
+
+Environment configuration must use:
+
+| Environment | Angular API URL | `APP_CORS_ALLOWED_ORIGINS` |
+| --- | --- | --- |
+| Production | `https://api.hr.nevgiuai.com/api` | `https://hr.nevgiuai.com` |
+| Staging | `https://staging-api.hr.nevgiuai.com/api` | `https://staging-hr.nevgiuai.com` |
+
+The Angular `production` and `staging` build configurations embed their corresponding API URL. The backend reads allowed browser origins from `APP_CORS_ALLOWED_ORIGINS`; do not add API hostnames to CORS unless a browser application is actually served from those hosts.
 
 Only the following ports should be publicly reachable:
 
@@ -324,6 +342,14 @@ GHCR_PULL_USERNAME
 GHCR_PULL_TOKEN
 OPENAI_API_KEY
 POSTGRES_PASSWORD
+```
+
+Suggested non-secret GitHub environment variables include:
+
+```text
+FRONTEND_URL
+API_URL
+APP_CORS_ALLOWED_ORIGINS
 ```
 
 Prefer a dedicated read-only GHCR token on the VPS if private packages require authentication. Do not place secrets in Compose files, workflow logs, image layers, repository variables, or command-line output.

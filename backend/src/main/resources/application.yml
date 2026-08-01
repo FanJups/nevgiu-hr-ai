@@ -41,6 +41,8 @@ management:
         include: health,info
 
 app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:80}
   cv-ingestion:
     max-pdf-size: 20971520
     max-archive-size: 104857600

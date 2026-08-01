@@ -85,6 +85,17 @@ Expected response:
 
 The PostgreSQL container listens on port `5432` inside the Docker network and is exposed as `5433` on the host to avoid conflicts with another local PostgreSQL instance.
 
+## Deployment domains
+
+HR AI is hosted under the `hr` project namespace of `nevgiuai.com`:
+
+| Environment | Frontend | Backend API |
+| --- | --- | --- |
+| Production | `https://hr.nevgiuai.com` | `https://api.hr.nevgiuai.com` |
+| Staging | `https://staging-hr.nevgiuai.com` | `https://staging-api.hr.nevgiuai.com` |
+
+Local development continues to use `http://localhost:4200` and `http://localhost:8080`. Deployment DNS records, TLS routing, GitHub environment URLs, frontend builds, backend CORS origins, and smoke tests must use the environment-specific domains above.
+
 ## Complete recruitment workflow
 
 1. Open **Generate job**, enter a role description, and generate a job-offer draft.
@@ -122,10 +133,10 @@ Run backend tests:
 
 ```bash
 cd backend
-./mvnw test
+mvn test
 ```
 
-On Windows PowerShell, use `./mvnw.cmd test`.
+Maven 3 and Java 21 must be available on the local `PATH`.
 
 Run frontend tests:
 
