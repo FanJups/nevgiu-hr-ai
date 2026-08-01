@@ -11,6 +11,7 @@ This directory translates `FD - Hackathon KLX 2025.docx` into implementation-ori
 5. [Interactive dashboard](./05-interactive-dashboard.md)
 6. [Implementation roadmap](./06-implementation-roadmap.md)
 7. [Open decisions](./07-open-decisions.md)
+8. [CI/CD and VPS deployment](./08-ci-cd-deployment.md)
 
 ## Recommended delivery order
 
@@ -33,6 +34,7 @@ This directory translates `FD - Hackathon KLX 2025.docx` into implementation-ori
 | Interactive dashboard | Planned | Aggregate APIs and dashboard UI are not implemented. |
 | External messaging | Planned | Telegram/WhatsApp choice and integration remain open. |
 | Production security | Planned | Authentication, authorization, tenant isolation, restricted CORS, audit logging, malware scanning, and retention controls remain. |
+| CI/CD and VPS deployment | Specified, not implemented | Target staging and production workflows, VPS architecture, backups, rollback, and deployment security are documented. Existing workflows require replacement or revision. |
 
 The application uses an Angular 19 frontend, a Spring Boot 3 / Java 21 backend, PostgreSQL with the pgvector image, and Spring AI with OpenAI.
 
