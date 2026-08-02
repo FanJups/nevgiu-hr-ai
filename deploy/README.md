@@ -2,6 +2,8 @@
 
 This directory contains the provider-neutral Docker Compose deployment used by staging and production.
 
+For initial OVHcloud provisioning, SSH hardening, Squarespace DNS, credential rotation, troubleshooting, and the production checklist, see `specifications/09-vps-provisioning-runbook.md`.
+
 ## Domain mapping
 
 | Environment | Frontend | Backend API |
