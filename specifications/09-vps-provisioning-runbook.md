@@ -249,8 +249,11 @@ Both must resolve to `141.94.33.197` before Caddy requests certificates.
 From the repository workstation:
 
 ```powershell
-scp -i "$env:USERPROFILE\.ssh\nevgiu_hr_staging" -r "C:\GitHub\nevgiu-hr-ai\deploy" deploy@141.94.33.197:/opt/nevgiu/
+$deployBundle = Join-Path (Get-Location) "deploy"
+scp -i "$env:USERPROFILE\.ssh\nevgiu_hr_staging" -r $deployBundle deploy@141.94.33.197:/opt/nevgiu/
 ```
+
+Run these commands from the root of the current repository checkout. They do not depend on its local directory name.
 
 Verify on the VPS:
 
@@ -314,8 +317,10 @@ This step bootstraps staging before GHCR automation is enabled. Clone the reposi
 
 ```bash
 cd /opt/nevgiu
-git clone https://github.com/FanJups/nevgiu-hr-ai.git source
+git clone <repository-url> source
 ```
+
+Replace `<repository-url>` with the HTTPS or SSH URL shown by the **Code** button on the current GitHub repository. Do not hardcode a personal account or organization name in this runbook.
 
 Build local images:
 
@@ -402,8 +407,10 @@ http://127.0.0.1/
 Inspect health and logs with:
 
 ```bash
-docker inspect nevgiu-hr-ai-frontend-1 --format '{{range .State.Health.Log}}{{.Output}}{{end}}'
-docker logs nevgiu-hr-ai-frontend-1 --tail 50
+cd /opt/nevgiu/deploy
+frontend_container=$(docker compose --env-file .env ps -q frontend)
+docker inspect "$frontend_container" --format '{{range .State.Health.Log}}{{.Output}}{{end}}'
+docker logs "$frontend_container" --tail 50
 ```
 
 ### Caddy did not start
@@ -460,7 +467,8 @@ openssl rand -hex 32
 Open PostgreSQL as `deploy`:
 
 ```bash
-docker exec -it nevgiu-hr-ai-db-1 psql -U hr_user -d hr_ai
+cd /opt/nevgiu/deploy
+docker compose --env-file .env exec db psql -U hr_user -d hr_ai
 ```
 
 At the PostgreSQL prompt:

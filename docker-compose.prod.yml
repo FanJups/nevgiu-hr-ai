@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
 
   db:
@@ -13,7 +11,7 @@ services:
     restart: unless-stopped
 
   backend:
-    image: hack6nov2025/nevgiu-hr-ai/hr-ai-backend:latest
+    image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE to the backend container image}
     environment:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
@@ -28,7 +26,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: hack6nov2025/nevgiu-hr-ai/hr-ai-frontend:latest
+    image: ${FRONTEND_IMAGE:?Set FRONTEND_IMAGE to the frontend container image}
     ports:
       - "80:80"
     depends_on:

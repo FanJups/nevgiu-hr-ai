@@ -29,9 +29,11 @@ docker compose version
 ### 1. Clone and enter the repository
 
 ```bash
-git clone https://github.com/githubId/nevgiu-hr-ai.git
-cd nevgiu-hr-ai
+git clone <repository-url>
+cd <repository-directory>
 ```
+
+Use the HTTPS or SSH URL shown by the **Code** button on the current GitHub repository. This keeps the instructions valid if the repository is transferred or renamed.
 
 ### 2. Configure the OpenAI API key
 

@@ -52,8 +52,10 @@ wait_for_stack() {
   return 1
 }
 
-previous_backend=$(docker inspect --format '{{.Config.Image}}' nevgiu-hr-ai-backend-1 2>/dev/null || true)
-previous_frontend=$(docker inspect --format '{{.Config.Image}}' nevgiu-hr-ai-frontend-1 2>/dev/null || true)
+previous_backend_id=$(compose ps -q backend)
+previous_frontend_id=$(compose ps -q frontend)
+previous_backend=$(docker inspect --format '{{.Config.Image}}' "$previous_backend_id" 2>/dev/null || true)
+previous_frontend=$(docker inspect --format '{{.Config.Image}}' "$previous_frontend_id" 2>/dev/null || true)
 
 new_images=.images.env.new
 printf 'BACKEND_IMAGE=%s\nFRONTEND_IMAGE=%s\n' "$backend_image" "$frontend_image" > "$new_images"
