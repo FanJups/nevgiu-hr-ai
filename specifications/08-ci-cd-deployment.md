@@ -424,33 +424,35 @@ The deployment pipeline can be built before these items are complete, but the en
 
 ### Phase 2 - CI and image publication
 
-- [ ] Run backend and frontend tests and builds deterministically.
+- [x] Run backend and frontend tests and builds deterministically.
 - [ ] Make CI required for `main`.
-- [ ] Rename container packages from `finance-ai-*` to `hr-ai-*`.
-- [ ] Build images once and publish SHA tags and digests to GHCR.
+- [x] Rename container packages from `finance-ai-*` to `hr-ai-*`.
+- [x] Build images once and publish SHA tags to GHCR after successful `main` CI.
+- [x] Inject the frontend API URL at container startup so staging and production use the same image.
 - [ ] Add image metadata and optional SBOM/provenance.
-- [ ] Remove or disable the self-hosted runner workflow.
+- [x] Remove the self-hosted runner workflow.
 
 **Exit condition:** every accepted `main` commit has traceable, immutable, tested container images.
 
 ### Phase 3 - Automatic staging
 
 - [ ] Configure the GitHub `staging` environment and secrets.
-- [ ] Deploy every successful `main` image automatically.
-- [ ] Add concurrency protection, health waiting, and smoke tests.
-- [ ] Add automatic application rollback.
-- [ ] Publish deployment URL, commit, and image digests in the workflow summary.
+- [x] Add automatic deployment of every successful `main` image to staging.
+- [x] Add concurrency protection, health waiting, and smoke tests.
+- [x] Add automatic application-image rollback.
+- [x] Publish deployment URL and commit in the workflow summary.
+- [x] Mark successfully smoke-tested images with staging-validation aliases.
 
 **Exit condition:** a successful merge reaches staging automatically and is accepted only when application checks pass.
 
 ### Phase 4 - Approved production promotion
 
 - [ ] Configure the protected `production` environment and separate secrets.
-- [ ] Trigger promotion from a semantic version GitHub Release.
-- [ ] Verify that image digests passed staging.
+- [x] Trigger promotion from a semantic version GitHub Release.
+- [x] Require staging-validation aliases for the release commit.
 - [ ] Require production approval where supported.
 - [ ] Check backup readiness before deployment.
-- [ ] Add production health checks, rollback, and deployment records.
+- [x] Add production health checks, application rollback, and deployment summaries.
 
 **Exit condition:** an approved release promotes the exact staging-tested artifacts and can safely return to the previous application version.
 

@@ -39,6 +39,8 @@ services:
 
   frontend:
     image: ${FRONTEND_IMAGE}
+    environment:
+      API_URL: https://${API_HOST}/api
     networks:
       - edge
     healthcheck:
