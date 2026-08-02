@@ -5,15 +5,15 @@ services:
   db:
     image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_DB: finance_ai
-      POSTGRES_USER: finance_user
+      POSTGRES_DB: hr_ai
+      POSTGRES_USER: hr_user
       POSTGRES_PASSWORD: super-secret
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U finance_user -d finance_ai"]
+      test: ["CMD-SHELL", "pg_isready -U hr_user -d hr_ai"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -25,8 +25,8 @@ services:
     env_file:
       - .env
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/finance_ai
-      SPRING_DATASOURCE_USERNAME: finance_user
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/hr_ai
+      SPRING_DATASOURCE_USERNAME: hr_user
       SPRING_DATASOURCE_PASSWORD: super-secret
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       #JWT_SECRET: change-me-change-me-change-me-change-me

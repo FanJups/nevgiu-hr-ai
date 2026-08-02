@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
+import { provideRouter } from '@angular/router';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent],
+      providers: [provideRouter([])],
     }).compileComponents();
   });
 
@@ -14,10 +16,34 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
   });
 
-  it(`should have the 'finance-ai-frontend' title`, () => {
+  it(`should have the application title`, () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
-    expect(app.title).toEqual('finance-ai-frontend');
+    expect(app.title).toEqual('HR AI Recruitment');
+  });
+
+  it('links job generation, approved jobs, and candidate evaluation', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    const links = Array.from(fixture.nativeElement.querySelectorAll('nav a')) as HTMLAnchorElement[];
+    expect(links.map((link) => link.textContent?.trim())).toEqual([
+      'Generate job', 'Approved jobs', 'CVs & Evaluation',
+    ]);
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/jobs/job-offer', '/jobs/job-listing', '/candidates/import',
+    ]);
+  });
+
+  it('renders the NevGiu logo as the accessible home link', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    const brand = fixture.nativeElement.querySelector('a.brand') as HTMLAnchorElement;
+    const logo = brand.querySelector('img') as HTMLImageElement;
+    expect(brand.getAttribute('aria-label')).toBe('NevGiu HR AI Recruitment home');
+    expect(brand.getAttribute('href')).toBe('/jobs/job-offer');
+    expect(logo.getAttribute('src')).toBe('/nevgiu_logo.png');
+    expect(logo.getAttribute('alt')).toBe('NevGiu');
+    expect(brand.textContent).toContain('HR AI Recruitment');
   });
 
 });

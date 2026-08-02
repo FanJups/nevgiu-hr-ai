@@ -1,4 +1,6 @@
 export interface GeneratedJobOffer {
+    id?: number;
+    title?: string;
     inferredTitle: string;
     level: string;
     summary: string;

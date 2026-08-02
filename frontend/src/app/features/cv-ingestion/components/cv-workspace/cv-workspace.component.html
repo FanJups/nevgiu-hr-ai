@@ -1,0 +1,121 @@
+<div class="workspace container my-4">
+  <section class="hero">
+    <p class="eyebrow">Candidate pipeline</p>
+    <h1>CV ingestion & evaluation</h1>
+    <p>Import CVs first, review every result, then explicitly evaluate a candidate against an approved job.</p>
+  </section>
+
+  <div class="alert alert-danger" role="alert" *ngIf="error">{{ error }}</div>
+
+  <section class="panel" aria-labelledby="import-title">
+    <div class="section-heading">
+      <div>
+        <p class="step">Step 1</p>
+        <h2 id="import-title">Import candidate CVs</h2>
+      </div>
+      <p>PDF up to 20 MB · ZIP up to 100 MB</p>
+    </div>
+
+    <div class="import-grid">
+      <article class="import-card">
+        <h3>Single PDF</h3>
+        <p>Extract text and create one candidate record.</p>
+        <label class="file-picker">
+          <span>{{ pdfFile?.name || 'Choose PDF' }}</span>
+          <input type="file" accept="application/pdf,.pdf" (change)="selectPdf($event)" />
+        </label>
+        <button class="btn btn-primary" type="button" [disabled]="!pdfFile || !!busyAction" (click)="uploadPdf()">
+          {{ busyAction === 'pdf' ? 'Uploading…' : 'Upload PDF' }}
+        </button>
+      </article>
+
+      <article class="import-card">
+        <h3>ZIP archive</h3>
+        <p>Process multiple PDFs and report each outcome.</p>
+        <label class="file-picker">
+          <span>{{ archiveFile?.name || 'Choose ZIP' }}</span>
+          <input type="file" accept="application/zip,.zip" (change)="selectArchive($event)" />
+        </label>
+        <button class="btn btn-primary" type="button" [disabled]="!archiveFile || !!busyAction" (click)="uploadArchive()">
+          {{ busyAction === 'archive' ? 'Importing…' : 'Upload ZIP' }}
+        </button>
+      </article>
+
+      <article class="import-card admin-card">
+        <h3>Built-in dataset</h3>
+        <p>Load the packaged 35-CV development dataset. Repeat runs are safe.</p>
+        <button class="btn btn-outline-primary" type="button" [disabled]="!!busyAction" (click)="importInitial()">
+          {{ busyAction === 'initial' ? 'Loading…' : 'Load built-in CVs' }}
+        </button>
+        <small>Administrative/development action</small>
+      </article>
+    </div>
+  </section>
+
+  <section class="panel" *ngIf="result" aria-labelledby="results-title">
+    <div class="section-heading">
+      <div><p class="step">Import outcome</p><h2 id="results-title">Results</h2></div>
+      <strong>{{ result.totalFiles }} file{{ result.totalFiles === 1 ? '' : 's' }}</strong>
+    </div>
+    <div class="summary-grid">
+      <div><strong>{{ result.imported }}</strong><span>Imported</span></div>
+      <div><strong>{{ result.duplicates }}</strong><span>Duplicates</span></div>
+      <div><strong>{{ result.needsReview }}</strong><span>Needs review</span></div>
+      <div><strong>{{ result.skipped }}</strong><span>Skipped</span></div>
+      <div><strong>{{ result.failed }}</strong><span>Failed</span></div>
+    </div>
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead><tr><th>File</th><th>Status</th><th>Candidate</th><th>Text</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let item of result.results; trackBy: trackResult">
+            <td>{{ item.originalFilename }}</td>
+            <td><span class="status" [ngClass]="item.status.toLowerCase()">{{ item.status }}</span></td>
+            <td>{{ item.candidateId ?? '—' }}</td>
+            <td>{{ item.textLength | number }} chars</td>
+            <td>{{ item.warnings.join(' · ') || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="evaluation-title">
+    <div class="section-heading">
+      <div><p class="step">Step 2</p><h2 id="evaluation-title">Evaluate against an approved job</h2></div>
+      <p>Evaluation uses the extracted CV text and the approved job description.</p>
+    </div>
+    <div class="evaluation-form">
+      <label>Candidate
+        <select class="form-select" [(ngModel)]="selectedCandidateId">
+          <option [ngValue]="null" disabled>{{ candidates.length ? 'Select candidate' : 'Import a CV first' }}</option>
+          <option *ngFor="let candidate of candidates" [ngValue]="candidate.id">{{ candidate.name }} (#{{ candidate.id }})</option>
+        </select>
+      </label>
+      <label>Approved job
+        <select class="form-select" [(ngModel)]="selectedJobId">
+          <option [ngValue]="null" disabled>{{ jobs.length ? 'Select job' : 'Approve a job offer first' }}</option>
+          <option *ngFor="let job of jobs" [ngValue]="job.id">{{ job.title }} · {{ job.level }}</option>
+        </select>
+      </label>
+      <button class="btn btn-success" type="button" [disabled]="!selectedCandidateId || !selectedJobId || !!busyAction" (click)="evaluate()">
+        {{ busyAction === 'evaluation' ? 'Evaluating…' : 'Evaluate candidate' }}
+      </button>
+    </div>
+
+    <div class="evaluation-result" *ngIf="evaluation as response">
+      <div class="overall"><strong>{{ response.evaluation.overallFitScore }}</strong><span>Overall fit / 100</span></div>
+      <div class="metrics">
+        <div><span>Skills match</span><strong>{{ response.evaluation.skillsMatchScore }}%</strong></div>
+        <div><span>Experience</span><strong>{{ response.evaluation.experienceRelevanceScore }}/10</strong></div>
+        <div><span>Education</span><strong>{{ response.evaluation.educationFitScore }}/10</strong></div>
+        <div><span>Achievements</span><strong>{{ response.evaluation.achievementImpactScore }}/10</strong></div>
+        <div><span>Keywords</span><strong>{{ response.evaluation.keywordDensityScore }}%</strong></div>
+        <div><span>Readability</span><strong>{{ response.evaluation.readabilityScore }}/10</strong></div>
+        <div><span>Gap review</span><strong>{{ response.evaluation.employmentGapScore }}/10</strong></div>
+        <div><span>AI confidence</span><strong>{{ response.evaluation.aiConfidenceScore }}%</strong></div>
+      </div>
+      <div class="explanation"><h3>AI explanation</h3><p>{{ response.explanation }}</p></div>
+    </div>
+  </section>
+</div>

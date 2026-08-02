@@ -7,7 +7,7 @@ import { JobGenerationResponse } from '../models/job-generation-response.models'
 import { ApproveJobRequest } from '../models/approve-job-request.models';
 import { GeneratedJobOffer } from '../models/generated-job-offer.models';
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class JobService {
 
   private apiUrl = environment.apiUrl;
