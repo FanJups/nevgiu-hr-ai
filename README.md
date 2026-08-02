@@ -2,6 +2,10 @@
 
 An AI-assisted recruitment application for generating job offers, evaluating candidates, and managing recruitment workflows.
 
+## Repository Transfer
+
+We started working on this project for the 1st Edition of [KLx, Crédit Agricole Group](https://www.klx.pt/) https://github.com/hack6nov2025/nevgiu-hr-ai then move to this NevGiU AI Org
+
 ## Technology stack
 
 - Angular frontend served by Nginx
